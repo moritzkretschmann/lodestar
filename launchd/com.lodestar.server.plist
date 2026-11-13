@@ -2,9 +2,9 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <!-- On-demand LaunchAgent: launchd holds 127.0.0.1:8765 and starts the server on the first request.
      Replace YOU with your macOS user name, copy to ~/Library/LaunchAgents/ and load with
-     launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.vibeterminal.server.plist -->
+     launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.lodestar.server.plist -->
 <plist version="1.0"><dict>
-  <key>Label</key><string>com.vibeterminal.server</string>
+  <key>Label</key><string>com.lodestar.server</string>
   <key>ProgramArguments</key><array>
     <string>/usr/bin/python3</string><string>-I</string>
     <string>/Users/YOU/lodestar/server.py</string><string>--no-open</string></array>
@@ -17,6 +17,6 @@
       <key>SockServiceName</key><string>8765</string>
       <key>SockType</key><string>stream</string>
       <key>SockFamily</key><string>IPv4</string></dict></dict>
-  <key>StandardOutPath</key><string>/Users/YOU/Library/Logs/VibeTerminal.log</string>
-  <key>StandardErrorPath</key><string>/Users/YOU/Library/Logs/VibeTerminal.log</string>
+  <key>StandardOutPath</key><string>/Users/YOU/Library/Logs/Lodestar.log</string>
+  <key>StandardErrorPath</key><string>/Users/YOU/Library/Logs/Lodestar.log</string>
 </dict></plist>

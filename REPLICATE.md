@@ -1,4 +1,4 @@
-# VibeTerminal: replication guide
+# Lodestar: replication guide
 
 A Bloomberg-style market terminal that runs locally. **Two files, Python standard library only, no build step, no npm.**
 
@@ -37,25 +37,25 @@ State lives in `~/.config/lodestar/`:
 - `bars.json`: recorded 1-minute bars of the pinned futures
 - `delayed/`: Deutsche Börse files
 
-The folder and config names still say "lodestar", the project's original name. Keep them, or rename them consistently in both files (localStorage keys too).
+The folder, config and localStorage names all use "lodestar", the project name.
 
 ### Auto-start on macOS (optional)
-`~/Library/LaunchAgents/com.vibeterminal.server.plist`:
+`~/Library/LaunchAgents/com.lodestar.server.plist`:
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
-  <key>Label</key><string>com.vibeterminal.server</string>
+  <key>Label</key><string>com.lodestar.server</string>
   <key>ProgramArguments</key><array>
     <string>/usr/bin/env</string><string>python3</string><string>-I</string>
     <string>/Users/YOU/lodestar/server.py</string><string>--no-open</string></array>
   <key>WorkingDirectory</key><string>/Users/YOU/lodestar</string>
   <key>RunAtLoad</key><true/><key>KeepAlive</key><true/><key>ThrottleInterval</key><integer>30</integer>
-  <key>StandardOutPath</key><string>/Users/YOU/Library/Logs/VibeTerminal.log</string>
-  <key>StandardErrorPath</key><string>/Users/YOU/Library/Logs/VibeTerminal.log</string>
+  <key>StandardOutPath</key><string>/Users/YOU/Library/Logs/Lodestar.log</string>
+  <key>StandardErrorPath</key><string>/Users/YOU/Library/Logs/Lodestar.log</string>
 </dict></plist>
 ```
-Load it with `launchctl load ~/Library/LaunchAgents/com.vibeterminal.server.plist`. After a code change, restart with `launchctl kickstart -k gui/$(id -u)/com.vibeterminal.server`. Don't start a second manual copy, or the two will clash on the port. Changes to `index.html` only need a browser reload.
+Load it with `launchctl load ~/Library/LaunchAgents/com.lodestar.server.plist`. After a code change, restart with `launchctl kickstart -k gui/$(id -u)/com.lodestar.server`. Don't start a second manual copy, or the two will clash on the port. Changes to `index.html` only need a browser reload.
 
 ---
 
@@ -228,4 +228,4 @@ Key tables to edit:
 
 ## 7. Prompt to hand to another Claude
 
-> Here are `server.py`, `index.html` and `REPLICATE.md` for VibeTerminal, a local Bloomberg-style terminal (Python stdlib server plus a single-page HTML UI). Read REPLICATE.md first. Set it up on my machine: put the files in `~/lodestar/`, ask me for my Finnhub key and store it in `~/.config/lodestar/finnhub.key` (chmod 600, never in code or chat logs), start the server and confirm http://127.0.0.1:8765 loads quotes. Then [optional: set up the LaunchAgent / extend feature X]. Keep it stdlib-only and keep the API key server-side.
+> Here are `server.py`, `index.html` and `REPLICATE.md` for Lodestar, a local Bloomberg-style terminal (Python stdlib server plus a single-page HTML UI). Read REPLICATE.md first. Set it up on my machine: put the files in `~/lodestar/`, ask me for my Finnhub key and store it in `~/.config/lodestar/finnhub.key` (chmod 600, never in code or chat logs), start the server and confirm http://127.0.0.1:8765 loads quotes. Then [optional: set up the LaunchAgent / extend feature X]. Keep it stdlib-only and keep the API key server-side.

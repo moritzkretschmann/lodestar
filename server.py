@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""VibeTerminal: a local market terminal.
+"""Lodestar: a local market terminal.
 
 Serves index.html on http://127.0.0.1:8765 and proxies Finnhub (key read from
 ~/.config/lodestar/finnhub.key), public RSS feeds, OpenFIGI, Deutsche Börse delayed
@@ -40,8 +40,8 @@ KEY_FILE = CONF / 'finnhub.key'
 CACHE_FILE = CONF / 'cache.json'
 PORT = int(os.environ.get('LODESTAR_PORT', '8765'))
 FH = 'https://finnhub.io/api/v1'
-UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) VibeTerminal/1.0'
-FEED_UA = 'Mozilla/5.0 (compatible; VibeTerminal/1.0 personal RSS reader)'
+UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Lodestar/1.0'
+FEED_UA = 'Mozilla/5.0 (compatible; Lodestar/1.0 personal RSS reader)'
 
 try:
     KEY = KEY_FILE.read_text().strip()
@@ -688,7 +688,7 @@ DB_VENUES = {'GY': ('DETR', 'Xetra'), 'GF': ('DFRA', 'Börse Frankfurt'), 'TH': 
 DB_PRETRADE = {'TH', 'GF'}  # Xetra's quote file is ~28 MB a minute, so Xetra gets trades only
 SUFFIX_VENUE = {'DE': 'GY', 'F': 'GF', 'TH': 'TH'}
 DB_DIR = CONF / 'delayed'
-DB_UA = 'VibeTerminal/1.0 (personal, non-commercial use of MiFIR delayed data)'
+DB_UA = 'Lodestar/1.0 (personal, non-commercial use of MiFIR delayed data)'
 DB_API = 'https://mfs.deutsche-boerse.com/api/'
 
 
@@ -2194,7 +2194,7 @@ def earnings():
 
 
 # ---------- DES: description, listing, company facts, trading statistics, valuation ----------
-WIKI_UA = 'VibeTerminal/1.0 (personal market terminal; non-commercial)'
+WIKI_UA = 'Lodestar/1.0 (personal market terminal; non-commercial)'
 COMPANY_WORDS = re.compile(r'\b(company|corporation|conglomerate|manufacturer|maker|producer|bank|insurer|insurance|group|firm|'
                            r'retailer|airline|holding|multinational|enterprise|provider|developer|operator|chain|brand|fund|trust)\b', re.I)
 
@@ -2940,7 +2940,7 @@ NEWS_TABS = {'all', 'hot', 'selected', 'markets', 'economy', 'cb', 'europe', 'as
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = 'VibeTerminal/1.0'
+    server_version = 'Lodestar/1.0'
     protocol_version = 'HTTP/1.1'
 
     def log_message(self, *args):
@@ -3087,7 +3087,7 @@ def main():
         srv = ThreadingHTTPServer(('127.0.0.1', PORT), Handler)
     srv.daemon_threads = True
     url = f'http://127.0.0.1:{PORT}/'
-    log(f'VibeTerminal running on {url}  ({len(feeds)} news sources; Ctrl+C to stop)')
+    log(f'Lodestar running on {url}  ({len(feeds)} news sources; Ctrl+C to stop)')
     if '--no-open' not in sys.argv:
         threading.Timer(0.8, lambda: webbrowser.open(url)).start()
     try:
