@@ -1,0 +1,7 @@
+# secrets and local state (live in ~/.config/lodestar/, never commit)
+*.key
+cache.json
+bars.json
+delayed/
+__pycache__/
+.DS_Store
