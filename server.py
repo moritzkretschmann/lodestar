@@ -2550,6 +2550,80 @@ def yahoo_spark(symbols):
 
 
 
+# ---------- WEI: world equity indices from Yahoo spark ----------
+WEI = [('Americas', [('^GSPC', 'S&P 500', 'US'), ('^NDX', 'Nasdaq 100', 'US'), ('^DJI', 'Dow Jones', 'US'), ('^RUT', 'Russell 2000', 'US'),
+                     ('^GSPTSE', 'S&P/TSX', 'CA'), ('^BVSP', 'Ibovespa', 'BR'), ('^MXX', 'IPC Mexico', 'MX')]),
+       ('EMEA', [('^STOXX50E', 'Euro Stoxx 50', 'EU'), ('^STOXX', 'Stoxx 600', 'EU'), ('^GDAXI', 'DAX', 'DE'), ('^MDAXI', 'MDAX', 'DE'),
+                 ('^FTSE', 'FTSE 100', 'GB'), ('^FCHI', 'CAC 40', 'FR'), ('^SSMI', 'SMI', 'CH'), ('FTSEMIB.MI', 'FTSE MIB', 'IT'),
+                 ('^IBEX', 'IBEX 35', 'ES'), ('^AEX', 'AEX', 'NL'), ('^OMX', 'OMX Stockholm 30', 'SE'), ('XU100.IS', 'BIST 100', 'TR')]),
+       ('Asia-Pacific', [('^N225', 'Nikkei 225', 'JP'), ('^HSI', 'Hang Seng', 'HK'), ('000001.SS', 'Shanghai Composite', 'CN'),
+                         ('000300.SS', 'CSI 300', 'CN'), ('^KS11', 'KOSPI', 'KR'), ('^TWII', 'Taiex', 'TW'), ('^AXJO', 'S&P/ASX 200', 'AU'),
+                         ('^BSESN', 'Sensex', 'IN'), ('^NSEI', 'Nifty 50', 'IN'), ('^STI', 'Straits Times', 'SG')])]
+
+
+def wei():
+    syms = [s for _, rows in WEI for s, _, _ in rows]
+    live, busy = yahoo_spark(syms)
+    regions = [{'region': reg, 'rows': [{'symbol': s, 'name': n, 'country': c, **live.get(s, {})} for s, n, c in rows]} for reg, rows in WEI]
+    return {'regions': regions, 'notes': ['Yahoo is rate limiting; some indices are missing, retrying in a few minutes.'] if busy else []}
+
+
+# ---------- MOST: US top movers (Yahoo predefined screeners) ----------
+MOST_SCR = {'gainers': 'day_gainers', 'losers': 'day_losers', 'active': 'most_actives'}
+
+
+def most(kind):
+    scr = MOST_SCR.get(kind, 'day_gainers')
+    ok, v = cache.get('most:' + scr)
+    if ok:
+        return v
+    if time.time() < yahoo_cooldown[0]:
+        raise Upstream(429, 'Yahoo is rate limiting; try again in a few minutes')
+    try:
+        j = json.loads(http_get('https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved?' + urllib.parse.urlencode({'scrIds': scr, 'count': 50})))
+    except Upstream as e:
+        if e.status == 429:
+            yahoo_cooldown[0] = time.time() + 300
+        raise
+    rows = []
+    for q in ((j.get('finance') or {}).get('result') or [{}])[0].get('quotes') or []:
+        rows.append({k: q.get(k) for k in ('symbol', 'shortName', 'regularMarketPrice', 'regularMarketChange', 'regularMarketChangePercent',
+                                           'regularMarketVolume', 'averageDailyVolume3Month', 'marketCap', 'currency', 'fullExchangeName', 'regularMarketTime')})
+    v = {'kind': kind, 'rows': rows}
+    cache.put('most:' + scr, v, 60)
+    return v
+
+
+# ---------- ECO: this week's economic calendar (Forex Factory's public JSON export; no actuals) ----------
+ECO_FILE = CACHE_FILE.with_name('eco.json')
+eco_next = [0.0]
+
+
+def eco():
+    """The feed allows only a few requests per hour: fetch at most hourly, keep the last copy on disk, serve it on errors."""
+    try:
+        last = json.loads(ECO_FILE.read_text())
+    except (OSError, ValueError):
+        last = None
+    if last and time.time() - last.get('fetched', 0) < 3600 or time.time() < eco_next[0]:
+        if last:
+            return last
+        raise Upstream(429, 'The calendar feed is rate limiting; retrying in a few minutes')
+    try:
+        raw = json.loads(http_get('https://nfs.faireconomy.media/ff_calendar_thisweek.json'))
+    except (Upstream, ValueError) as e:
+        eco_next[0] = time.time() + 600
+        if last:
+            return {**last, 'note': f'Showing the copy from {time.strftime("%H:%M", time.localtime(last["fetched"]))}; the feed failed ({e}).'}
+        raise
+    v = {'fetched': time.time(), 'events': [{k: e.get(k) for k in ('title', 'country', 'date', 'impact', 'forecast', 'previous')} for e in raw if isinstance(e, dict)]}
+    try:
+        ECO_FILE.write_text(json.dumps(v))
+    except OSError:
+        pass
+    return v
+
+
 # ---------- FX converter: ECB reference rates (daily, ~30 currencies) with Yahoo's live quotes on top ----------
 FX_NAMES = {'EUR': 'Euro', 'USD': 'US dollar', 'GBP': 'British pound', 'CHF': 'Swiss franc', 'JPY': 'Japanese yen', 'CNY': 'Chinese yuan',
             'HKD': 'Hong Kong dollar', 'CAD': 'Canadian dollar', 'AUD': 'Australian dollar', 'NZD': 'New Zealand dollar', 'SEK': 'Swedish krona',
@@ -2750,6 +2824,7 @@ class Stream:
         self.lock, self.wlock, self.slock = threading.Lock(), threading.Lock(), threading.Lock()
         self.wanted, self.clients, self.subs = {}, {}, set()
         self.sock, self.buf, self.connected, self.error = None, b'', False, None
+        self.last_trade, self.bad_since, self.last_heal = time.time(), None, 0.0
         threading.Thread(target=self.run, daemon=True, name='finnhub-stream').start()
 
     def attach(self, q, syms):
@@ -2844,9 +2919,20 @@ class Stream:
         d, self.buf = self.buf[:n], self.buf[n:]
         return d
 
+    def check_health(self):
+        # Finnhub sometimes leaves a connection open but dead: no trades, or "Invalid symbol" for valid
+        # symbols (2026-11-11, 13:30–15:42). The pinned BTC/EUR trades around the clock, so silence means a stale stream.
+        now = time.time()
+        if now - self.last_trade > 180:
+            raise OSError('no trades for 3 minutes, reconnecting')
+        if self.bad_since and now - self.bad_since > 60 and now - self.last_heal > 600:
+            self.last_heal = now
+            raise OSError('Finnhub rejected pinned symbols, reconnecting')
+
     def read_loop(self):
         parts = []
         while True:
+            self.check_health()
             try:
                 b0, b1 = self.recvn(2, idle_ok=True)
             except socket.timeout:
@@ -2882,6 +2968,7 @@ class Stream:
             return
         if m.get('type') == 'trade':
             data = [{'s': d['s'], 'p': d['p'], 'v': d.get('v') or 0, 't': d['t']} for d in m.get('data', [])]
+            self.last_trade = time.time()
             bars.add(data)
             with self.lock:
                 targets = list(self.clients.items())
@@ -2894,6 +2981,8 @@ class Stream:
                         pass
         elif m.get('type') == 'error':
             self.error = m.get('msg')
+            if 'Invalid symbol' in (self.error or '') and self.error.split()[-1] in PINNED and not self.bad_since:
+                self.bad_since = time.time()
             log(f'stream error: {self.error}')
 
     def run(self):
@@ -2903,10 +2992,17 @@ class Stream:
                 self.connect()
                 with self.slock:
                     self.connected, self.error, self.subs = True, None, set()
+                self.last_trade, self.bad_since = time.time(), None
                 self.sync()
                 log('trade stream connected')
-                backoff = 2
-                self.read_loop()
+                up = time.time()
+                try:
+                    self.read_loop()
+                finally:
+                    # Finnhub allows one stream per key and drops the older one when another connects;
+                    # only a connection that held for a minute resets the back-off, so two clients don't storm into 429s.
+                    if time.time() - up > 60:
+                        backoff = 2
             except Exception as e:  # noqa: BLE001 - reconnect on anything
                 self.error = str(e)
                 log(f'trade stream dropped: {e}')
@@ -2989,6 +3085,9 @@ class Handler(BaseHTTPRequestHandler):
                 '/api/actions': lambda: actions(one_sym(qs), qs.get('name', '')[:80]),
                 '/api/members': lambda: members(one_sym(qs)),
                 '/api/fx': lambda: fx_rates(),
+                '/api/wei': wei,
+                '/api/most': lambda: most(qs.get('kind', 'gainers')),
+                '/api/eco': eco,
                 '/api/des': lambda: des(one_sym(qs), qs.get('name', '')[:80], qs.get('isin', '').upper()[:12]),
                 '/api/earnings': earnings,
                 '/api/refs': lambda: futures_refs(parse_syms(qs.get('symbols', ''))),
@@ -3046,20 +3145,6 @@ class Handler(BaseHTTPRequestHandler):
             stream.detach(q)
 
 
-def launchd_socket(name='Listener'):
-    """The listening socket launchd holds for us when started on demand (LaunchAgent 'Sockets'), else None."""
-    if sys.platform != 'darwin' or not os.environ.get('LODESTAR_LAUNCHD'):
-        return None
-    import ctypes
-    libc = ctypes.CDLL(None)
-    fds, cnt = ctypes.POINTER(ctypes.c_int)(), ctypes.c_size_t()
-    if libc.launch_activate_socket(name.encode(), ctypes.byref(fds), ctypes.byref(cnt)) or not cnt.value:
-        return None
-    fd = fds[0]
-    libc.free(fds)
-    return socket.socket(fileno=fd)
-
-
 def main():
     global stream, delayed
     stream = Stream()
@@ -3078,13 +3163,7 @@ def main():
             except OSError as e:
                 log(f'could not save futures bars: {e}')
     threading.Thread(target=housekeeping, daemon=True, name='housekeeping').start()
-    sock = launchd_socket()
-    if sock:
-        srv = ThreadingHTTPServer(('127.0.0.1', PORT), Handler, bind_and_activate=False)
-        srv.socket.close()
-        srv.socket = sock
-    else:
-        srv = ThreadingHTTPServer(('127.0.0.1', PORT), Handler)
+    srv = ThreadingHTTPServer(('127.0.0.1', PORT), Handler)
     srv.daemon_threads = True
     url = f'http://127.0.0.1:{PORT}/'
     log(f'Lodestar running on {url}  ({len(feeds)} news sources; Ctrl+C to stop)')

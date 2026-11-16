@@ -233,6 +233,30 @@ small.cy,i.cy{color:var(--dim);font-size:.62em;font-weight:400;font-style:normal
 .memb td.bar i{display:block;height:6px}
 .memb td.bar i.u{background:var(--up)} .memb td.bar i.d{background:var(--down)}
 .des-page{position:absolute;inset:0;z-index:15;background:var(--panel);display:flex;flex-direction:column;min-height:0}
+.wei{padding:12px 18px;overflow:auto}
+.pg-tabs{display:flex;gap:4px;margin-right:12px;flex-wrap:wrap}
+.pg-tabs button{background:transparent;border:1px solid var(--line);color:var(--dim);font-size:11px;padding:1px 8px;cursor:pointer}
+.pg-tabs button.on{color:var(--amber);border-color:var(--amber)}
+.eco-imp{display:inline-block;width:8px;height:8px;margin-right:4px}
+.eco-imp.High{background:var(--down)} .eco-imp.Medium{background:var(--amber)} .eco-imp.Low{background:var(--faint)} .eco-imp.Holiday{background:var(--cyan)}
+.wei tr.past td{color:var(--dim)} .wei tr.next td{background:var(--panel-2)} .wei tr.next td:first-child{box-shadow:inset 2px 0 var(--amber)}
+.alrt-new{display:flex;gap:8px;align-items:center;margin-bottom:12px;font-family:var(--f-data)}
+.alrt-new input{background:var(--bg);color:var(--fg);border:1px solid var(--line);font-family:var(--f-data);font-size:16px;padding:5px 8px;width:160px;text-align:right}
+.alrt-new input:focus{outline:none;border-color:var(--amber)}
+#alrtN:not(:empty){margin-left:5px;color:var(--amber)}
+.wei td .des-x{font-size:11px;padding:1px 7px}
+.wei table{border-collapse:collapse;font-family:var(--f-data);font-size:12.5px;width:100%;max-width:980px;margin-bottom:14px}
+.wei th{color:var(--dim);font-weight:400;text-align:right;padding:4px 8px;border-bottom:1px solid var(--line)}
+.wei td{text-align:right;padding:4px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+.wei .l{text-align:left}
+.wei tr.reg td{color:var(--amber);text-align:left;padding-top:12px;font-weight:600;letter-spacing:.04em}
+.wei tbody tr[data-s]{cursor:pointer}
+.wei tbody tr[data-s]:hover{background:var(--panel-2)}
+.wei .bar{width:140px}
+.wei .bar i{display:block;height:8px}
+.wei .bar i.up{background:var(--up);margin-left:50%}
+.wei .bar i.down{background:var(--down);margin-left:auto;margin-right:50%}
+.wei .tm.old{color:var(--amber)}
 .fxc{padding:16px 18px;display:flex;flex-direction:column;gap:14px;overflow:auto}
 .fxc-in{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .fxc-in input,.fxc-in select{background:var(--bg);color:var(--fg);border:1px solid var(--line);font-family:var(--f-data);font-size:18px;padding:6px 8px}
@@ -251,6 +275,8 @@ small.cy,i.cy{color:var(--dim);font-size:.62em;font-weight:400;font-style:normal
 .fxc-tab tr[data-c]:hover td{background:color-mix(in oklab,var(--amber) 8%,transparent)}
 .fxc-tab tr.on td{color:var(--amber)}
 .fxc-tab td.tm{color:var(--dim);font-size:11px}
+.res.cmd .rs{color:var(--amber);min-width:56px}
+.res.cmd .rn{color:var(--dim)}
 .fxc-btn{background:transparent;border:1px solid var(--line);color:var(--amber);font-family:var(--f-data);font-size:11px;letter-spacing:.08em;padding:3px 8px;cursor:pointer}
 .fxc-btn:hover{border-color:var(--amber)}
 .des-x{background:transparent;border:1px solid var(--line);color:var(--fg);cursor:pointer;font-size:12px;padding:1px 8px}
@@ -340,11 +366,10 @@ kbd{font-family:var(--f-data);font-size:10px;border:1px solid var(--faint);paddi
     <div class="brand"><b>Lodestar</b></div>
     <div class="search">
       <div class="sbox"><label for="q">&gt;</label>
-        <input id="q" placeholder="Search by name, ticker, ISIN or Bloomberg code, e.g. NVD GY or US67066G1040" spellcheck="false" autocomplete="off" role="combobox" aria-controls="results" aria-expanded="false">
-        <kbd>/</kbd></div>
+        <input id="q" placeholder="Search or command" spellcheck="false" autocomplete="off" role="combobox" aria-controls="results" aria-expanded="false">
+</div>
       <div class="results" id="results" role="listbox" hidden></div>
     </div>
-    <button type="button" class="fxc-btn" id="fxcBtn" title="FX converter (type FXCA)">FXCA</button>
     <span class="mstat" id="mstat"><i></i><span>US market</span></span>
     <div class="clocks" id="clocks"></div>
   </div>
@@ -353,11 +378,31 @@ kbd{font-family:var(--f-data);font-size:10px;border:1px solid var(--faint);paddi
 
   <div class="main">
     <section class="des-page" id="desPage" hidden aria-label="Description page">
-      <header class="ph"><h2>DES</h2><span class="meta" id="desMeta"></span><span class="sp"></span><span class="meta">Esc to close</span><button type="button" class="des-x" id="desClose" title="Close (Esc)">✕</button></header>
+      <header class="ph"><h2>DES</h2><span class="meta" id="desMeta"></span><span class="sp"></span><button type="button" class="des-x" id="desClose" title="Close (Esc)">✕</button></header>
       <div class="pb" id="desBox"></div>
     </section>
+    <section class="des-page" id="mostPage" hidden aria-label="Top movers">
+      <header class="ph"><h2>MOST</h2><span class="meta" id="mostMeta">US top movers</span><span class="sp"></span><span class="pg-tabs" id="mostTabs"><button type="button" data-k="gainers">Gainers</button><button type="button" data-k="losers">Losers</button><button type="button" data-k="active">Most active</button></span><button type="button" class="des-x" id="mostClose" title="Close (Esc)">✕</button></header>
+      <div class="pb wei" id="mostBox"></div>
+    </section>
+    <section class="des-page" id="ecoPage" hidden aria-label="Economic calendar">
+      <header class="ph"><h2>ECO</h2><span class="meta" id="ecoMeta">Economic calendar</span><span class="sp"></span><span class="pg-tabs" id="ecoImp"><button type="button" data-k="High">High</button><button type="button" data-k="Medium">Medium</button><button type="button" data-k="Low">Low</button></span><span class="pg-tabs" id="ecoCcy"></span><button type="button" class="des-x" id="ecoClose" title="Close (Esc)">✕</button></header>
+      <div class="pb wei" id="ecoBox"></div>
+    </section>
+    <section class="des-page" id="alrtPage" hidden aria-label="Price alerts">
+      <header class="ph"><h2>ALRT</h2><span class="meta" id="alrtMeta">Price alerts</span><span class="sp"></span><button type="button" class="des-x" id="alrtClose" title="Close (Esc)">✕</button></header>
+      <div class="pb wei">
+        <form class="alrt-new" id="alrtForm"><span id="alrtFor"></span><input id="alrtPx" inputmode="decimal" spellcheck="false" autocomplete="off" aria-label="Alert price" placeholder="Price"><button type="submit" class="des-x">Add alert</button></form>
+        <div id="alrtBox"></div>
+        <p class="des-note">Alerts are checked in this browser while the terminal is open; each one fires once, with a sound and a desktop notification if you allow them. Shortcut: type <b>ALRT 123.45</b> in the command line for the selected instrument.</p>
+      </div>
+    </section>
+    <section class="des-page" id="weiPage" hidden aria-label="World equity indices">
+      <header class="ph"><h2>WEI</h2><span class="meta" id="weiMeta">World equity indices</span><span class="sp"></span><button type="button" class="des-x" id="weiClose" title="Close (Esc)">✕</button></header>
+      <div class="pb wei" id="weiBox"><p class="empty">Loading…</p></div>
+    </section>
     <section class="des-page" id="fxcPage" hidden aria-label="FX converter">
-      <header class="ph"><h2>FXCA</h2><span class="meta" id="fxcMeta">FX converter</span><span class="sp"></span><span class="meta">Esc to close</span><button type="button" class="des-x" id="fxcClose" title="Close (Esc)">✕</button></header>
+      <header class="ph"><h2>FXCA</h2><span class="meta" id="fxcMeta">FX converter</span><span class="sp"></span><button type="button" class="des-x" id="fxcClose" title="Close (Esc)">✕</button></header>
       <div class="pb fxc">
         <div class="fxc-in">
           <input id="fxcAmt" inputmode="decimal" spellcheck="false" autocomplete="off" aria-label="Amount">
@@ -438,10 +483,7 @@ kbd{font-family:var(--f-data);font-size:10px;border:1px solid var(--faint);paddi
 
   <div class="status">
     <span class="live off" id="live"><i></i><span>CONNECTING</span></span>
-    <span><span class="num" id="tps">0</span> trades/s</span>
-    <span>Prices: Finnhub real-time (US stocks, crypto, FX) · Xetra, Frankfurt, Tradegate: Deutsche Börse, 15 min delayed · News: <span id="srcCount">60</span> sources · Corporate actions: SEC filings, Finnhub, Yahoo · ISINs: Business Insider</span>
-    <span class="sp"></span>
-    <span><kbd>/</kbd> search <kbd>↑</kbd><kbd>↓</kbd> watchlist <kbd>wheel</kbd> zoom</span>
+    <span title="Prices: Finnhub real-time (US stocks, crypto, FX) · Xetra, Frankfurt, Tradegate: Deutsche Börse, 15 min delayed · Indices, movers: Yahoo · Corporate actions: SEC, Finnhub, Yahoo · ISINs: Business Insider"><span class="num" id="tps">0</span> trades/s</span>
   </div>
 </div>
 
@@ -733,7 +775,7 @@ function buildWatch() {
     el.addEventListener('click', () => select(el.dataset.sym));
     el.setAttribute('aria-selected', el.dataset.sym === sel);
   }
-  $('#watchMeta').textContent = watch.length + ' instruments';
+  $('#watchMeta').textContent = '';
   setTimeout(updSessions, 0);
   for (const s of watch) dirtySyms.add(s);
   buildTape();
@@ -947,7 +989,8 @@ function updQuote() {
   $('#qPC').previousElementSibling.textContent = !q?.pc && x.dayRef ? 'DAY OPEN' : 'PREV CLOSE';
   $('#qT').textContent = ext ? hms(ext.t) : x.lastT ? hms(x.lastT) : '—';
   $('#qMC').textContent = p.marketCap ? compact(p.marketCap * 1e6) : '—';
-  $('#chartMeta').textContent = x.delayed ? `${DELAYED[venueCode(x)]} trades · Deutsche Börse · delayed 15 min${x.dq && x.dq.partial ? ' · from ' + x.dq.since + ', loading earlier' : ''}` : x.histSource ? 'history: ' + x.histSource + ' + live' : 'live trades';
+  $('#chartMeta').textContent = x.delayed ? 'delayed 15 min' + (x.dq && x.dq.partial ? ' · loading' : '') : '';
+  $('#chartMeta').parentElement.title = x.delayed ? `${DELAYED[venueCode(x)]} trades · Deutsche Börse · delayed 15 min` : x.histSource ? 'History: ' + x.histSource + ' + live trades' : 'Live trades';
   const dq = x.dq, qb = dq && dq.quote;
   const fut = FUT[x.sym] || ((x.sym.startsWith('YH:') || (x.sym.startsWith('OANDA:') && x.group !== 'FX')) ? (x.label || disp(x.sym)) : null);
   $('#qDelay').hidden = !x.delayed && !fut;
@@ -1285,7 +1328,7 @@ function printsSource(x) {
 }
 function renderPrints() {
   const x = inst[sel];
-  $('#printsSrc').innerHTML = printsSource(x);
+  $('#printsSrc').hidden = true; $('#printsMeta').parentElement.title = printsSource(x).replace(/<[^>]+>/g, '');
   $('#printsMeta').textContent = disp(sel);
   { const c = ccyName(ccyOf(x)); $('#printsCcy').textContent = c ? `Price (${c})` : 'Price'; }
   $('#printsEmpty').hidden = x.prints.length > 0;
@@ -1310,9 +1353,9 @@ function updHeat() {
 $('#heat').addEventListener('click', e => { const t = e.target.closest('.tile'); if (t) select(t.dataset.sym); });
 
 // ---------- news ----------
-const TABS = [['all', 'All'], ['gnews', 'Google News'], ['hot', 'Hot'], ['selected', 'Selected'], ['markets', 'Markets'], ['economy', 'Economy'], ['cb', 'Central banks'],
-  ['europe', 'Europe'], ['asia', 'Asia-Pac'], ['crypto', 'Crypto'], ['fxc', 'FX & cmdty'], ['wires', 'Press releases'], ['tv', 'TV'], ['sources', 'Sources']];
-let newsTab = 'gnews';  // the terminal always opens on Google News
+const TABS = [['tv', 'TV'], ['all', 'All'], ['hot', 'Hot'], ['selected', 'Selected'], ['markets', 'Markets'], ['economy', 'Economy'], ['cb', 'Central banks'],
+  ['europe', 'Europe'], ['asia', 'Asia-Pac'], ['crypto', 'Crypto'], ['fxc', 'FX & cmdty'], ['wires', 'Press releases'], ['sources', 'Sources']];
+let newsTab = 'tv';  // the terminal always opens on TV
 let newsTimer, nqT, newsReq = 0;
 const seenNews = new Set();
 $('#newsTabs').innerHTML = TABS.map(([k, l]) => `<button type="button" data-k="${k}" aria-pressed="${k === newsTab}">${l}</button>`).join('');
@@ -1376,10 +1419,12 @@ function renderTV() {
   const embed = src.kind === 'channel'
     ? `https://www.youtube.com/embed/live_stream?channel=${src.id}&autoplay=1&mute=1&rel=0`
     : `https://www.youtube.com/embed/${src.id}?autoplay=1&mute=1&rel=0`;
+  const watchUrl = src.kind === 'channel' ? `https://www.youtube.com/channel/${src.id}/live` : `https://www.youtube.com/watch?v=${src.id}`;
   $('#news').innerHTML = `<div class="tv">
-    <div class="tv-frame" id="tvFrame"><iframe src="${esc(embed)}" title="${isBbg ? 'Bloomberg Business News Live' : 'YouTube stream'}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
-      <div class="tv-shield" id="tvShield" title="Click for the player controls"></div></div>
-    <form class="tv-own" id="tvForm"><input id="tvIn" placeholder="Stream a YouTube link or channel ID" value="${esc(isBbg ? '' : custom)}" spellcheck="false" autocomplete="off" aria-label="YouTube link or channel ID"><button type="submit">Play</button>${isBbg ? '' : '<button type="button" id="tvBbg">Bloomberg TV</button>'}</form>
+    <div class="tv-frame" id="tvFrame"><iframe id="tvIframe" src="${esc(embed)}" title="${isBbg ? 'Bloomberg Business News Live' : 'YouTube stream'}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
+      <div class="tv-shield" id="tvShield" title="Click for the player controls"></div>
+</div>
+    <form class="tv-own" id="tvForm"><input id="tvIn" placeholder="Stream a YouTube link or channel ID" value="${esc(isBbg ? '' : custom)}" spellcheck="false" autocomplete="off" aria-label="YouTube link or channel ID"><button type="submit">Play</button><button type="button" id="tvPop" title="Open on YouTube in a small window: for videos the uploader blocks outside YouTube">Pop out</button>${isBbg ? '' : '<button type="button" id="tvBbg">Bloomberg TV</button>'}</form>
     <div class="tv-hot"><div class="tv-hot-h">Hot</div><div id="tvHot"><p class="empty">Loading…</p></div></div>
   </div>`;
   loadTvHot();
@@ -1395,6 +1440,7 @@ function renderTV() {
     store.set('tvCustom', v); renderTV();
   });
   $('#tvBbg')?.addEventListener('click', () => { store.set('tvCustom', ''); renderTV(); });
+  $('#tvPop').addEventListener('click', () => window.open(watchUrl, 'vtTV', 'width=960,height=600'));
 }
 function moreReports(n) {
   if (!n.more || !n.more.length) return '';
@@ -1431,7 +1477,7 @@ async function renderSources(id, reset) {
     }
     $('#news').innerHTML = h + '</tbody></table>';
     $('#newsMeta').textContent = `${ok} of ${f.length} sources OK`;
-    $('#srcCount').textContent = f.length;
+
   } catch (e) { if (id === newsReq) $('#news').innerHTML = `<p class="empty">Couldn't load the source list: ${esc(e.message)}</p>`; }
 }
 
@@ -1439,7 +1485,7 @@ async function renderSources(id, reset) {
 let desOpen = false, desReq = 0;
 const desCache = {};
 $('#desClose').addEventListener('click', () => closeDes());
-function openDes() { if (typeof closeFxc === 'function' && fxcOpen) closeFxc(); desOpen = true; $('#desPage').hidden = false; loadDes(); }
+function openDes() { if (typeof closeFxc === 'function' && fxcOpen) closeFxc(); if (typeof closePages === 'function') closePages(); desOpen = true; $('#desPage').hidden = false; loadDes(); }
 function closeDes() { desOpen = false; $('#desPage').hidden = true; }
 const nz = v => v != null && isFinite(v);
 const money = (v, ccy) => nz(v) ? compact(v) + (ccy ? ' ' + ccy : '') : '—';
@@ -1698,10 +1744,22 @@ function localMatches(q) {
   return Object.values(inst).filter(x => x.sym.toLowerCase().includes(ql) || disp(x.sym).toLowerCase().includes(ql) || x.name.toLowerCase().includes(ql) || (x.isin || '').toLowerCase() === ql)
     .slice(0, 8).map(x => ({ symbol: x.sym, name: x.name, isin: x.isin, group: x.group, type: x.group, live: x.live !== false }));
 }
+const CMDS = [['WEI', 'World equity indices'], ['MOST', 'US top movers'], ['ECO', 'Economic calendar'], ['FXCA', 'FX converter'], ['ALRT', 'Price alerts'], ['DES', 'Description']];
+function cmdRows(q) {
+  q = (q || '').trim().toUpperCase();
+  return CMDS.filter(([c]) => !q || (q.length >= 2 && c.startsWith(q))).map(([c, d]) => ({ cmd: c,
+    name: c === 'DES' ? d + ' · ' + disp(sel) : c === 'ALRT' ? d + ((n => n ? ` · ${n} active` : '')(alerts.filter(a => !a.hit).length)) : d }));
+}
+function runCmd(c) {
+  qIn.value = ''; closeResults(); qIn.blur(); desCmd = false;
+  ({ WEI: openWei, MOST: openMost, ECO: openEco, FXCA: () => openFxc(), ALRT: openAlrt, DES: openDes })[c]();
+}
+qIn.addEventListener('focus', () => { if (!qIn.value.trim()) { results = cmdRows(''); active = -1; renderResults(); } });
 function renderResults(note) {
   resEl.hidden = false; qIn.setAttribute('aria-expanded', 'true');
   if (!results.length) { resEl.innerHTML = `<div class="rnote">${esc(note || 'No matches.')}</div>`; return; }
   resEl.innerHTML = results.map((r, i) => {
+    if (r.cmd) return `<div class="res cmd" role="option" data-i="${i}" aria-selected="${i === active}"><span class="rs">${r.cmd}</span><span class="rn">${esc(r.name)}</span></div>`;
     const on = watch.includes(r.symbol);
     return `<div class="res" role="option" data-i="${i}" aria-selected="${i === active}"><span class="rs">${esc(r.bbg || disp(r.symbol))}</span><span class="rn" title="${esc(r.name)}">${esc(r.name)}</span><span class="ri">${esc(r.isin || '—')}</span>${(() => { const k = r.data || (r.live ? 'live' : 'none'); return `<span class="rt${k === 'delayed' || k === 'yahoo' ? ' dl' : k === 'none' ? ' nl' : ''}" title="${k === 'live' ? 'Real-time prices' : k === 'delayed' ? 'Deutsche Börse data, delayed 15 minutes' : k === 'yahoo' ? 'Yahoo Finance, may be delayed 10–30 minutes' : 'No free prices for this venue'}">${esc(r.venue || r.type || r.group)}${k === 'delayed' ? ' · 15 min delayed' : k === 'yahoo' ? ' · delayed' : k === 'none' ? ' · no quotes' : ''}</span>`; })()}<button type="button" class="ra${on ? ' on' : ''}" data-add="${i}" title="${on ? 'Remove from' : 'Add to'} watchlist">${on ? '✓' : '+'}</button></div>`;
   }).join('') + (note ? `<div class="rnote">${esc(note)}</div>` : '');
@@ -1711,6 +1769,164 @@ function closeResults() { clearTimeout(searchT); searchId++; resEl.hidden = true
 let fxcOpen = false, fxc = null, fxcTimer;
 const FX_TOP = ['EUR', 'USD', 'GBP', 'CHF', 'JPY', 'CNY', 'HKD', 'CAD', 'AUD', 'SEK', 'NOK', 'DKK', 'PLN', 'BTC', 'ETH'];
 const fxSt = store.get('fxc', { amt: '1000', from: 'EUR', to: 'USD' });
+// ---------- overlay pages (DES, FXCA, WEI, ALRT, MOST, ECO): only one is open at a time ----------
+function closePages() {
+  if (desOpen) closeDes(); if (fxcOpen) closeFxc();
+  if (typeof weiOpen !== 'undefined' && weiOpen) closeWei(); if (typeof alrtOpen !== 'undefined' && alrtOpen) closeAlrt();
+  if (mostOpen) closeMost(); if (ecoOpen) closeEco();
+}
+// ---------- MOST: US gainers / losers / most active from Yahoo's screeners ----------
+const MOST_RX = /^MOST$/i;
+let mostOpen = false, mostTimer, mostKind = store.get('most', 'gainers');
+function openMost() { closePages(); mostOpen = true; $('#mostPage').hidden = false; loadMost(); }
+function closeMost() { mostOpen = false; $('#mostPage').hidden = true; clearTimeout(mostTimer); }
+async function loadMost() {
+  clearTimeout(mostTimer);
+  for (const b of $('#mostTabs').children) b.classList.toggle('on', b.dataset.k === mostKind);
+  try {
+    const d = await api('/api/most?kind=' + mostKind); if (d.kind !== mostKind) return;
+    const key = mostKind === 'active' ? 'regularMarketVolume' : 'regularMarketChangePercent';
+    d.rows.sort((x, y) => mostKind === 'losers' ? (x[key] ?? 0) - (y[key] ?? 0) : (y[key] ?? 0) - (x[key] ?? 0));
+    $('#mostBox').innerHTML = `<table><thead><tr><th class="l">Ticker</th><th class="l">Name</th><th class="l">Exchange</th><th>Last</th><th>Net chg</th><th>% chg</th><th>Volume</th><th title="Today's volume vs the 3-month daily average">Rel vol</th><th>Mkt cap</th></tr></thead><tbody>`
+      + d.rows.map(r => { const rv = r.averageDailyVolume3Month ? r.regularMarketVolume / r.averageDailyVolume3Month : null;
+        return `<tr data-s="${esc(r.symbol)}" data-n="${esc(r.shortName || '')}" title="Open ${esc(r.symbol)}"><td class="l"><b>${esc(r.symbol)}</b></td><td class="l">${esc(r.shortName || '')}</td><td class="l flat">${esc(r.fullExchangeName || '')}</td><td>${fmt(r.regularMarketPrice, 2)}${ccyTag(r.currency || 'USD')}</td><td class="${cls(r.regularMarketChange)}">${r.regularMarketChange == null ? '—' : (r.regularMarketChange >= 0 ? '+' : '') + fmt(r.regularMarketChange, 2)}</td><td class="${cls(r.regularMarketChangePercent)}">${pctText(r.regularMarketChangePercent)}</td><td>${r.regularMarketVolume != null ? compact(r.regularMarketVolume) : '—'}</td><td class="${rv >= 2 ? 'up' : ''}">${rv != null ? rv.toFixed(1) + '×' : '—'}</td><td>${r.marketCap ? compact(r.marketCap) : '—'}</td></tr>`; }).join('')
+      + '</tbody></table><p class="des-note">US-listed stocks from Yahoo Finance screeners (Yahoo applies a minimum size and price). Refreshes every minute.</p>';
+    $('#mostMeta').textContent = `US top movers · ${d.rows.length} stocks · updated ${hm(Date.now() / 1000)}`;
+  } catch (e) { $('#mostBox').innerHTML = `<p class="empty">Couldn't load movers: ${esc(e.message)}</p>`; }
+  if (mostOpen) mostTimer = setTimeout(loadMost, 60000);
+}
+$('#mostBtn')?.addEventListener('click', () => mostOpen ? closeMost() : openMost());
+$('#mostClose').addEventListener('click', closeMost);
+$('#mostTabs').addEventListener('click', e => { const b = e.target.closest('[data-k]'); if (!b) return; mostKind = b.dataset.k; store.set('most', mostKind); loadMost(); });
+$('#mostBox').addEventListener('click', e => { const tr = e.target.closest('tr[data-s]'); if (!tr) return; closeMost(); open({ symbol: tr.dataset.s, name: tr.dataset.n }); });
+
+// ---------- ECO: this week's economic calendar, in local time ----------
+const ECO_RX = /^ECO$/i;
+const ECO_CCY = ['USD', 'EUR', 'GBP', 'JPY', 'CNY', 'CHF', 'CAD', 'AUD', 'NZD'];
+let ecoOpen = false, ecoTimer, ecoData = null, ecoSt = store.get('eco', { imp: ['High', 'Medium'], ccy: [] });
+function openEco() { closePages(); ecoOpen = true; $('#ecoPage').hidden = false; loadEco(); }
+function closeEco() { ecoOpen = false; $('#ecoPage').hidden = true; clearTimeout(ecoTimer); }
+async function loadEco() {
+  clearTimeout(ecoTimer);
+  try { ecoData = await api('/api/eco'); } catch (e) { if (!ecoData) $('#ecoBox').innerHTML = `<p class="empty">Couldn't load the calendar: ${esc(e.message)}</p>`; }
+  if (ecoData) renderEco();
+  if (ecoOpen) ecoTimer = setTimeout(loadEco, 300000);
+}
+function renderEco() {
+  store.set('eco', ecoSt);
+  for (const b of $('#ecoImp').children) b.classList.toggle('on', ecoSt.imp.includes(b.dataset.k));
+  $('#ecoCcy').innerHTML = `<button type="button" data-c="" class="${ecoSt.ccy.length ? '' : 'on'}">All</button>` + ECO_CCY.map(c => `<button type="button" data-c="${c}" class="${ecoSt.ccy.includes(c) ? 'on' : ''}">${c}</button>`).join('');
+  const now = Date.now(), ev = ecoData.events.map(e => ({ ...e, ts: Date.parse(e.date) }))
+    .filter(e => (ecoSt.imp.includes(e.impact) || e.impact === 'Holiday') && (!ecoSt.ccy.length || ecoSt.ccy.includes(e.country))).sort((a, b) => a.ts - b.ts);
+  const next = ev.find(e => e.ts >= now - 60000);
+  let h = '<table><thead><tr><th class="l">Time</th><th class="l">Ccy</th><th class="l">Impact</th><th class="l">Event</th><th>Forecast</th><th>Previous</th></tr></thead><tbody>', day = '';
+  for (const e of ev) {
+    const d = new Date(e.ts), dk = d.toDateString();
+    if (dk !== day) { day = dk; h += `<tr class="reg"><td colspan="6">${d.toLocaleDateString('en-GB', { weekday: 'long', day: '2-digit', month: 'short' })}</td></tr>`; }
+    const allDay = /T00:00:00/.test(e.date) && (e.impact === 'Holiday' || !e.forecast);
+    h += `<tr class="${e === next ? 'next' : e.ts < now ? 'past' : ''}"><td class="l">${allDay ? 'All day' : pad2(d.getHours()) + ':' + pad2(d.getMinutes())}</td><td class="l"><b>${esc(e.country)}</b></td><td class="l"><i class="eco-imp ${esc(e.impact)}"></i>${esc(e.impact)}</td><td class="l">${esc(e.title)}</td><td>${esc(e.forecast || '—')}</td><td>${esc(e.previous || '—')}</td></tr>`;
+  }
+  $('#ecoBox').innerHTML = (ev.length ? h + '</tbody></table>' : '<p class="empty">No events match the filters.</p>')
+    + `<p class="des-note">${ecoData.note ? esc(ecoData.note) + ' ' : ''}This week's calendar from Forex Factory's public export, in your local time. It has forecasts and previous values but no actual results; the feed refreshes hourly.</p>`;
+  $('#ecoMeta').textContent = `This week · ${ev.length} events` + (next ? ` · next ${next.country} ${next.title} at ${pad2(new Date(next.ts).getHours())}:${pad2(new Date(next.ts).getMinutes())}` : '');
+  $('#ecoBox').querySelector('tr.next')?.scrollIntoView({ block: 'center' });
+}
+$('#ecoBtn')?.addEventListener('click', () => ecoOpen ? closeEco() : openEco());
+$('#ecoClose').addEventListener('click', closeEco);
+$('#ecoImp').addEventListener('click', e => { const b = e.target.closest('[data-k]'); if (!b || !ecoData) return; const k = b.dataset.k;
+  ecoSt.imp = ecoSt.imp.includes(k) ? ecoSt.imp.filter(x => x !== k) : [...ecoSt.imp, k]; renderEco(); });
+$('#ecoCcy').addEventListener('click', e => { const b = e.target.closest('[data-c]'); if (!b || !ecoData) return; const c = b.dataset.c;
+  ecoSt.ccy = !c ? [] : ecoSt.ccy.includes(c) ? ecoSt.ccy.filter(x => x !== c) : [...ecoSt.ccy, c]; renderEco(); });
+
+// ---------- ALRT: one-shot price alerts, checked against the prices the terminal already updates ----------
+const ALRT_RX = /^(?:ALRT(?:\s+([\d.,]+k?))?|([\d.,]+k?)\s+ALRT)$/i;
+let alerts = store.get('alerts', []), alrtOpen = false;
+function saveAlerts() { store.set('alerts', alerts); }
+function addAlert(sym, px) {
+  const x = ensure(sym), cur = x.last;
+  if (px == null || !(px > 0)) { toast('Type a price, e.g. ALRT 123.45'); return false; }
+  if (cur == null) { toast('No price yet for ' + disp(sym) + '; try again in a moment'); return false; }
+  alerts.push({ id: Date.now() + Math.random(), sym, name: x.name, px, dir: px >= cur ? 'above' : 'below', from: cur, t: Date.now() / 1000 });
+  if (!watch.includes(sym)) toggleWatch(sym);  // the watchlist is what keeps a price updating
+  saveAlerts(); toast(`Alert: ${disp(sym)} ${px >= cur ? '≥' : '≤'} ${pxText(x, px)}`);
+  if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission().catch(() => {});
+  if (alrtOpen) renderAlerts();
+  return true;
+}
+function beep() { try { const c = new AudioContext(), o = c.createOscillator(), g = c.createGain(); o.frequency.value = 880; g.gain.value = .08; o.connect(g).connect(c.destination); o.start(); o.stop(c.currentTime + .25); } catch {} }
+function checkAlerts() {
+  let fired = false;
+  for (const a of alerts) {
+    if (a.hit) continue;
+    const x = inst[a.sym], p = x && x.last; if (p == null) continue;
+    if (a.dir === 'above' ? p >= a.px : p <= a.px) {
+      a.hit = Date.now() / 1000; a.hitPx = p; fired = true;
+      const msg = `${disp(a.sym)} ${a.dir === 'above' ? 'rose to' : 'fell to'} ${pxText(x, p)} (alert ${pxText(x, a.px)})`;
+      clearTimeout(toastT); toast('🔔 ' + msg); clearTimeout(toastT); toastT = setTimeout(() => $('.toast').hidden = true, 10000);
+      beep();
+      if ('Notification' in window && Notification.permission === 'granted') try { new Notification('Lodestar alert', { body: msg, tag: String(a.id) }); } catch {}
+    }
+  }
+  if (fired) { saveAlerts(); if (alrtOpen) renderAlerts(); }
+}
+setInterval(checkAlerts, 1500);
+function openAlrt() { closePages(); alrtOpen = true; $('#alrtPage').hidden = false; renderAlerts(); setTimeout(() => $('#alrtPx').focus(), 0); }
+function closeAlrt() { alrtOpen = false; $('#alrtPage').hidden = true; }
+function renderAlerts() {
+  const x = inst[sel];
+  $('#alrtFor').innerHTML = `<b>${esc(disp(sel))}</b>&nbsp;<span class="flat">${esc(x?.name || '')} · last ${x?.last != null ? pxText(x, x.last) : '—'}</span>`;
+  const row = a => { const y = ensure(a.sym), p = y.last, dist = p != null ? (a.px / p - 1) * 100 : null;
+    return `<tr data-s="${esc(a.sym)}"><td class="l"><b>${esc(disp(a.sym))}</b></td><td class="l">${esc(a.name || '')}</td><td>${a.dir === 'above' ? '≥' : '≤'} ${pxText(y, a.px)}</td><td>${p != null ? pxText(y, p) : '—'}</td><td>${a.hit ? '<span class="flat">' + new Date(a.hit * 1000).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) + ' at ' + pxText(y, a.hitPx) + '</span>' : dist != null ? pctText(dist) + ' away' : '—'}</td><td><button type="button" class="des-x" data-del="${a.id}" title="Delete">✕</button></td></tr>`; };
+  const act = alerts.filter(a => !a.hit), hit = alerts.filter(a => a.hit).sort((a, b) => b.hit - a.hit);
+  const head = '<thead><tr><th class="l">Instrument</th><th class="l">Name</th><th>Alert</th><th>Last</th><th>Status</th><th></th></tr></thead>';
+  $('#alrtBox').innerHTML = (act.length ? `<table>${head}<tbody><tr class="reg"><td colspan="6">Active</td></tr>${act.map(row).join('')}</tbody></table>` : '<p class="empty">No active alerts.</p>')
+    + (hit.length ? `<table><tbody><tr class="reg"><td colspan="6">Triggered</td></tr>${hit.map(row).join('')}</tbody></table>` : '');
+  $('#alrtMeta').textContent = `${act.length} active · ${hit.length} triggered`;
+}
+$('#alrtBtn')?.addEventListener('click', () => alrtOpen ? closeAlrt() : openAlrt());
+$('#alrtClose').addEventListener('click', closeAlrt);
+$('#alrtForm').addEventListener('submit', e => { e.preventDefault(); if (addAlert(sel, parseAmt($('#alrtPx').value))) $('#alrtPx').value = ''; });
+$('#alrtBox').addEventListener('click', e => {
+  const del = e.target.closest('[data-del]');
+  if (del) { alerts = alerts.filter(a => String(a.id) !== del.dataset.del); saveAlerts(); renderAlerts(); return; }
+  const tr = e.target.closest('tr[data-s]'); if (tr) { select(tr.dataset.s); renderAlerts(); }
+});
+saveAlerts();
+
+// ---------- WEI page: world equity indices; a row opens the index chart ----------
+const WEI_RX = /^WEI$/i;
+let weiOpen = false, weiTimer;
+function openWei() { closePages(); weiOpen = true; $('#weiPage').hidden = false; loadWei(); }
+function closeWei() { weiOpen = false; $('#weiPage').hidden = true; clearTimeout(weiTimer); }
+async function loadWei() {
+  clearTimeout(weiTimer);
+  try {
+    const d = await api('/api/wei'), now = Date.now() / 1000;
+    const all = d.regions.flatMap(r => r.rows).filter(x => x.last != null && x.prev);
+    const maxAbs = Math.max(1, ...all.map(x => Math.abs(x.last / x.prev - 1) * 100));
+    let h = '<table><thead><tr><th class="l">Index</th><th class="l">Ctry</th><th>Last</th><th>Net chg</th><th>% chg</th><th class="bar"></th><th>Time</th></tr></thead><tbody>';
+    for (const r of d.regions) {
+      h += `<tr class="reg"><td colspan="7">${esc(r.region)}</td></tr>`;
+      for (const x of r.rows) {
+        const ch = x.last != null && x.prev ? x.last - x.prev : null, pc = ch != null ? ch / x.prev * 100 : null;
+        const old = x.t && now - x.t > 1200, w = pc != null ? Math.min(50, Math.abs(pc) / maxAbs * 50) : 0;
+        const tm = !x.t ? '—' : old ? 'Close ' + new Date(x.t * 1000).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : new Date(x.t * 1000).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+        h += `<tr data-s="${esc(x.symbol)}" data-n="${esc(x.name)}" title="Open the ${esc(x.name)} chart"><td class="l"><b>${esc(x.name)}</b></td><td class="l">${esc(x.country)}</td><td>${fmt(x.last, 2)}</td><td class="${cls(ch)}">${ch == null ? '—' : (ch >= 0 ? '+' : '') + fmt(ch, 2)}</td><td class="${cls(pc)}">${pctText(pc)}</td><td class="bar"><i class="${cls(pc)}" style="width:${w.toFixed(1)}%"></i></td><td class="tm${old ? ' old' : ''}">${tm}</td></tr>`;
+      }
+    }
+    $('#weiBox').innerHTML = h + '</tbody></table>' + (d.notes || []).map(n => `<p class="des-note">${esc(n)}</p>`).join('') + '<p class="des-note">Index levels from Yahoo Finance; some exchanges are delayed 15–20 minutes. Change is against the previous close.</p>';
+    const up = all.filter(x => x.last > x.prev).length;
+    $('#weiMeta').textContent = `${all.length} indices · ${up} up, ${all.length - up} down · updated ${hm(now)}`;
+  } catch (e) { $('#weiBox').innerHTML = `<p class="empty">Couldn't load indices: ${esc(e.message)}</p>`; }
+  if (weiOpen) weiTimer = setTimeout(loadWei, 60000);
+}
+$('#weiBtn')?.addEventListener('click', () => weiOpen ? closeWei() : openWei());
+$('#weiClose').addEventListener('click', closeWei);
+$('#weiBox').addEventListener('click', e => {
+  const tr = e.target.closest('tr[data-s]'); if (!tr) return;
+  closeWei(); open({ symbol: 'YH:' + tr.dataset.s, name: tr.dataset.n, group: 'Index futures', live: false });
+});
+
 const FXC_RX = /(^|\s)FXCA?$/i;  // FXCA as on Bloomberg; FXC also accepted
 function parseAmt(t) {
   t = String(t || '').trim().replace(/\s/g, '').toLowerCase();
@@ -1731,7 +1947,7 @@ function fxcCmd(raw) {  // "FXCA", "100 USD FXCA", "100 USD CHF FXCA", "100k usd
 }
 function openFxc(cmd) {
   if (cmd) { if (cmd.amt) fxSt.amt = cmd.amt; if (cmd.from) fxSt.from = cmd.from; if (cmd.to) fxSt.to = cmd.to; }
-  if (desOpen) closeDes();
+  closePages();
   fxcOpen = true; $('#fxcPage').hidden = false; $('#fxcAmt').value = fxSt.amt;
   loadFxc(); setTimeout(() => { $('#fxcAmt').focus(); $('#fxcAmt').select(); }, 0);
 }
@@ -1770,7 +1986,7 @@ function renderFxc() {
   }).join('');
   $('#fxcNote').textContent = [...(fxc.notes || []), 'Rates are mid quotes for information, not dealing prices. Cross rates go via EUR.'].join(' ');
 }
-$('#fxcBtn').addEventListener('click', () => fxcOpen ? closeFxc() : openFxc());
+$('#fxcBtn')?.addEventListener('click', () => fxcOpen ? closeFxc() : openFxc());
 $('#fxcClose').addEventListener('click', closeFxc);
 $('#fxcAmt').addEventListener('input', () => { fxSt.amt = $('#fxcAmt').value; renderFxc(); });
 $('#fxcFrom').addEventListener('change', e => { fxSt.from = e.target.value; renderFxc(); });
@@ -1784,24 +2000,37 @@ const DES_RX = /(^|\s)DES$/i;
 function splitCmd() { const raw = qIn.value.trim(); desCmd = DES_RX.test(raw); return raw.replace(DES_RX, '').trim(); }
 qIn.addEventListener('input', () => {
   clearTimeout(searchT);
+  if (MOST_RX.test(qIn.value.trim())) { results = cmdRows('MOST'); active = 0; renderResults(); return; }
+  if (ECO_RX.test(qIn.value.trim())) { results = cmdRows('ECO'); active = 0; renderResults(); return; }
+  if (ALRT_RX.test(qIn.value.trim())) { const m = qIn.value.trim().match(ALRT_RX), v = m[1] || m[2]; results = []; active = -1; renderResults(v ? `Enter sets an alert: ${disp(sel)} at ${v}` : 'ALRT 123.45 sets an alert for ' + disp(sel)); return; }
+  if (WEI_RX.test(qIn.value.trim())) { results = cmdRows('WEI'); active = 0; renderResults(); return; }
   if (FXC_RX.test(qIn.value.trim())) { const c = fxcCmd(qIn.value.trim()); results = []; active = -1; renderResults(c ? 'Enter opens the FX converter' + (c.amt || c.from ? ` · ${[c.amt, c.from, c.to && '→ ' + c.to].filter(Boolean).join(' ')}` : '') : 'FXCA takes: [amount] [from] [to], e.g. 100 USD CHF FXCA'); return; }
   const q = splitCmd();
-  if (!q) { if (desCmd) { results = []; active = -1; renderResults(`Enter opens DES for ${disp(sel)}`); } else closeResults(); return; }
+  if (!q) { if (desCmd) { results = []; active = -1; renderResults(`Enter opens DES for ${disp(sel)}`); } else { results = cmdRows(''); active = -1; renderResults(); } return; }
   const hint = desCmd ? 'Enter opens DES for the selected row' : '';
-  results = localMatches(q); active = results.length ? 0 : -1; renderResults(hint || 'Searching all exchanges…');
+  const cmds = desCmd ? [] : cmdRows(q);
+  results = [...cmds, ...localMatches(q)]; active = results.length ? 0 : -1; renderResults(hint || 'Searching…');
   searchT = setTimeout(async () => {
     const id = ++searchId;
     try {
       const r = await api('/api/search?q=' + enc(q));
       if (id !== searchId || !qIn.value.trim()) return;
       const seen = new Set(), merged = [];
-      for (const it of [...r.results, ...results]) if (!seen.has(it.symbol)) { seen.add(it.symbol); merged.push(it); }
-      results = merged.slice(0, 30); active = results.length ? 0 : -1;
+      for (const it of [...r.results, ...results.filter(x => !x.cmd)]) if (!seen.has(it.symbol)) { seen.add(it.symbol); merged.push(it); }
+      results = [...cmds, ...merged].slice(0, 30); active = results.length ? 0 : -1;
       renderResults(r.error ? 'Search partly failed: ' + r.error : results.length ? hint : `Nothing found for "${q}".`);
     } catch (e) { if (id === searchId) renderResults('Search failed: ' + e.message); }
   }, 280);
 });
 qIn.addEventListener('keydown', async e => {
+  if (e.key === 'Enter' && (MOST_RX.test(qIn.value.trim()) || ECO_RX.test(qIn.value.trim()))) {
+    e.preventDefault(); const m = MOST_RX.test(qIn.value.trim()); qIn.value = ''; closeResults(); qIn.blur(); desCmd = false; m ? openMost() : openEco(); return;
+  }
+  if (e.key === 'Enter' && ALRT_RX.test(qIn.value.trim())) {
+    e.preventDefault(); const m = qIn.value.trim().match(ALRT_RX), v = m[1] || m[2]; qIn.value = ''; closeResults(); qIn.blur(); desCmd = false;
+    if (v) addAlert(sel, parseAmt(v)); else openAlrt(); return;
+  }
+  if (e.key === 'Enter' && WEI_RX.test(qIn.value.trim())) { e.preventDefault(); qIn.value = ''; closeResults(); qIn.blur(); desCmd = false; openWei(); return; }
   if (e.key === 'Enter' && FXC_RX.test(qIn.value.trim())) {
     e.preventDefault(); const c = fxcCmd(qIn.value.trim()); qIn.value = ''; closeResults(); qIn.blur(); desCmd = false; openFxc(c || undefined); return;
   }
@@ -1829,7 +2058,7 @@ resEl.addEventListener('click', e => {
 qIn.addEventListener('blur', () => setTimeout(closeResults, 120));
 document.addEventListener('mousedown', e => { if (!resEl.hidden && !e.target.closest('.search')) closeResults(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !resEl.hidden) closeResults(); });
-function pickResult(r) { const des = desCmd; desCmd = false; qIn.value = ''; closeResults(); qIn.blur(); open(r); if (des) openDes(); }
+function pickResult(r) { if (r.cmd) { runCmd(r.cmd); return; } const des = desCmd; desCmd = false; qIn.value = ''; closeResults(); qIn.blur(); open(r); if (des) openDes(); }
 function open(r) { const x = ensure(r.symbol, r); if (r.live === false) x.live = false; if (r.data === 'delayed') { x.delayed = true; x.live = false; } select(r.symbol); }
 
 // ---------- selection ----------
@@ -1860,6 +2089,10 @@ function setEvView(v) {
 document.addEventListener('keydown', e => {
   const typing = document.activeElement === qIn;
   if (e.key === 'Escape' && fxcOpen && !typing) { closeFxc(); return; }
+  if (e.key === 'Escape' && weiOpen && !typing) { closeWei(); return; }
+  if (e.key === 'Escape' && alrtOpen) { closeAlrt(); return; }
+  if (e.key === 'Escape' && (mostOpen || ecoOpen) && !typing) { closePages(); return; }
+  if (e.target.closest && e.target.closest('#alrtPage')) return;
   if (e.target.closest && e.target.closest('#fxcPage')) return;  // typing an amount or picking a currency
   if (e.key === 'Escape' && desOpen && !typing) { closeDes(); return; }
   if (e.key === 'Escape' && measure) { measure = null; dirty = true; }

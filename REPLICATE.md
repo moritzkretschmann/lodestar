@@ -72,6 +72,13 @@ Load it with `launchctl load ~/Library/LaunchAgents/com.lodestar.server.plist`. 
 - Result order: **main listing first** (the US line for US ISINs, GY for German ones), then the typed listing, then real-time venues, then delayed venues, then the rest.
 - `<ticker | ISIN | name> DES`: description page. A bare `DES` opens it for the current instrument.
 - `FXCA`, `100 USD FXCA` or `100 USD CHF FXCA`: FX converter page. `FXC` also works.
+- `WEI`: world equity indices page (30 indices in Americas, EMEA and Asia-Pacific from Yahoo spark, `/api/wei`). A row click opens the index chart as a `YH:^…` symbol.
+- `MOST`: US top movers page with Gainers / Losers / Most active tabs (Yahoo predefined screeners `day_gainers`, `day_losers`, `most_actives` via `/api/most?kind=`, no crumb needed, cached 60 s), with relative volume vs the 3-month average. A row click opens the stock.
+- `ECO`: this week's economic calendar from Forex Factory's public export (`nfs.faireconomy.media/ff_calendar_thisweek.json`, `/api/eco`), in local time, filterable by impact and currency. **The feed rate-limits hard (429 after two quick requests):** the server fetches at most hourly, keeps a copy in `~/.config/lodestar/eco.json`, and backs off 10 minutes after an error. No actual values, only forecast and previous.
+- Only one overlay page is open at a time (`closePages()`).
+- `ALRT 123.45` (or `123.45 ALRT`): one-shot price alert for the selected instrument; the direction comes from the current price. A bare `ALRT` opens the alert list. Alerts live in localStorage, are checked every 1.5 s against `x.last`, and fire with a toast, a beep and a desktop notification. Setting one adds the instrument to the watchlist, which keeps its price updating.
+- Clicking the empty command line lists the commands (WEI, MOST, ECO, FXCA, ALRT, DES); typing 2+ letters of one puts it first above the search results. There are no command buttons in the top bar.
+- Source notes live in tooltips (status bar, chart and Time & Sales headers) to keep the screen quiet. The news panel opens on TV; the Google News tab was removed.
 - `/` focuses the command line. Esc closes dropdowns and pages. ↑/↓ moves through the watchlist.
 
 ### Watchlist sidebar
