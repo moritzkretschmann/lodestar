@@ -88,6 +88,18 @@ Load it with `launchctl load ~/Library/LaunchAgents/com.lodestar.server.plist`. 
 - Bottom-right panel: Earnings / Active (US most active, gainers, losers) / Heatmap.
 - Corporate-actions panel has tabs for US-listed stocks: Corporate actions, **Holders** (13F treemap, colour = change in shares), **Short interest** (charts of shares short and days to cover), **Analysts** (price target and range, Buy/Hold/Sell, quarterly and yearly EPS estimates). Data: Nasdaq's public JSON API (`api.nasdaq.com`, browser UA, cached 6–12 h) via `/api/nq?symbol=&kind=holders|short|analyst`.
 
+### Gödel-style additions
+- Default UI scale: `html{zoom:.84}`. The chart divides mouse coordinates by the zoom (`zoomF()`) and sizes its canvas from `clientWidth`; keep the browser itself at 100 %.
+- `FA`, `EM`, `CF`, `CN` work like `DES`: after a security (`AAPL FA`) or bare for the selected one.
+  - **FA**: income statement, balance sheet, cash flow, ratios; annual or quarterly (Nasdaq `company/<T>/financials?frequency=1|2`, values in USD thousands) via `/api/fa`.
+  - **EM**: consensus EPS by fiscal year and quarter with range, growth, implied P/E, revisions, plus price target and Buy/Hold/Sell (`/api/nq?kind=analyst`).
+  - **CF**: 3 years of SEC filings (Finnhub `stock/filings`) grouped into Annual, Quarterly, 8-K, Proxy, Ownership, Insiders, Offerings via `/api/filings`.
+  - **CN**: switches the news panel to the selected stock.
+- The Time & sales slot has a **Snapshot** view (default): 1-year sparkline, market, trading, performance, valuation and fundamentals from `/api/des`.
+- Panel borders are draggable (three column borders, the actions/snapshot border, the row border); sizes are saved in localStorage `lodestar.layout`, double-click a border to reset. Only on wide screens (> 1100 px); the holders treemap and short-interest charts re-render on resize.
+- WEI has a YTD column (second Yahoo spark call with `range=ytd`; `chartPreviousClose` = last close of the prior year).
+- The Quote Monitor has an input at the bottom that adds one or many tickers (comma-separated names, tickers, Bloomberg codes or ISINs).
+
 ### Watchlist sidebar
 - Groups: Equities, Index futures, Commodity futures, FX, Crypto.
 - Defaults are the US mega caps plus these "futures", which are OANDA CFDs through Finnhub:

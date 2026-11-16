@@ -2516,12 +2516,12 @@ def index_members(page, style):
     return out
 
 
-def yahoo_spark(symbols):
+def yahoo_spark(symbols, rng='1d'):
     """Price and previous close for many symbols, 20 per Yahoo request, cached 2 minutes per chunk."""
     out, busy = {}, False
     for i in range(0, len(symbols), 20):
         chunk = symbols[i:i + 20]
-        key = 'spark:' + ','.join(chunk)
+        key = 'spark:' + ('' if rng == '1d' else rng + ':') + ','.join(chunk)
         ok, v = cache.get(key)
         if not ok:
             if time.time() < yahoo_cooldown[0]:
@@ -2529,14 +2529,14 @@ def yahoo_spark(symbols):
                 continue
             try:
                 j = json.loads(http_get('https://query1.finance.yahoo.com/v7/finance/spark?' + urllib.parse.urlencode(
-                    {'symbols': ','.join(chunk), 'range': '1d', 'interval': '1d'})))
+                    {'symbols': ','.join(chunk), 'range': rng, 'interval': '1d'})))
                 v = {}
                 for r in (j.get('spark') or {}).get('result') or []:
                     m = ((r.get('response') or [{}])[0].get('meta')) or {}
                     if m.get('regularMarketPrice') is not None:
                         v[r['symbol']] = {'last': m.get('regularMarketPrice'), 'prev': m.get('chartPreviousClose') or m.get('previousClose'),
                                           't': m.get('regularMarketTime'), 'ccy': m.get('currency')}
-                cache.put(key, v, 120)
+                cache.put(key, v, 120 if rng == '1d' else 1800)
             except Upstream as e:
                 if e.status == 429:
                     yahoo_cooldown[0] = time.time() + 300
@@ -2564,7 +2564,10 @@ WEI = [('Americas', [('^GSPC', 'S&P 500', 'US'), ('^NDX', 'Nasdaq 100', 'US'), (
 def wei():
     syms = [s for _, rows in WEI for s, _, _ in rows]
     live, busy = yahoo_spark(syms)
-    regions = [{'region': reg, 'rows': [{'symbol': s, 'name': n, 'country': c, **live.get(s, {})} for s, n, c in rows]} for reg, rows in WEI]
+    ytd, busy2 = yahoo_spark(syms, 'ytd')
+    regions = [{'region': reg, 'rows': [{'symbol': s, 'name': n, 'country': c, **live.get(s, {}), 'yearRef': (ytd.get(s) or {}).get('prev')}
+                                        for s, n, c in rows]} for reg, rows in WEI]
+    busy = busy or busy2
     return {'regions': regions, 'notes': ['Yahoo is rate limiting; some indices are missing, retrying in a few minutes.'] if busy else []}
 
 
@@ -2687,6 +2690,41 @@ def nq_data(sym, kind):
                 'buy': co.get('buy'), 'hold': co.get('hold'), 'sell': co.get('sell'), 'history': hist,
                 'quarterly': pick('quarterlyForecast'), 'yearly': pick('yearlyForecast')}
     return {'error': 'Unknown data kind'}
+
+
+# ---------- FA: financial statements (Nasdaq), CF: SEC filings (Finnhub) ----------
+def fa_data(sym, freq):
+    if not re.fullmatch(r'[A-Z]{1,5}(\.[A-Z])?', sym or ''):
+        return {'error': 'Financial statements cover US-listed stocks only.'}
+    d = nq_get(f"company/{sym.replace('.', '-')}/financials?frequency={2 if freq == 'quarterly' else 1}", 12 * 3600)
+    out = {}
+    for key, name in (('incomeStatementTable', 'Income statement'), ('balanceSheetTable', 'Balance sheet'),
+                      ('cashFlowTable', 'Cash flow'), ('financialRatiosTable', 'Ratios')):
+        t = d.get(key) or {}
+        hd = t.get('headers') or {}
+        cols = [hd[k] for k in sorted(hd, key=lambda k: int(k[5:])) if k != 'value1']
+        rows = [[r.get('value1')] + [r.get(f'value{i}') for i in range(2, 2 + len(cols))] for r in t.get('rows') or []]
+        out[name] = {'periods': cols, 'rows': rows}
+    return {'tables': out, 'freq': freq}
+
+
+def filings_data(sym):
+    if not re.fullmatch(r'[A-Z]{1,5}(\.[A-Z])?', sym or ''):
+        return {'error': 'SEC filings cover US-listed companies only.'}
+    today = datetime.now(timezone.utc).date()
+    rows = fh('stock/filings', {'symbol': sym, 'from': str(today - timedelta(days=3 * 365)), 'to': str(today)}, ttl=3600) or []
+    return {'filings': [{'form': (f.get('form') or '').strip(), 'filed': (f.get('filedDate') or '')[:10], 'accepted': f.get('acceptedDate'),
+                         'url': f.get('reportUrl') or f.get('filingUrl')} for f in rows]}
+
+
+# ---------- market tiles on the home screen (Yahoo spark) ----------
+TILES = [('^GSPC', 'SPX'), ('^NDX', 'NDX'), ('^DJI', 'INDU'), ('^VIX', 'VIX'), ('^TNX', 'US10Y'), ('DX-Y.NYB', 'DXY'),
+         ('GC=F', 'GOLD'), ('CL=F', 'WTI'), ('BTC-USD', 'BTC'), ('EURUSD=X', 'EURUSD')]
+
+
+def tiles():
+    live, busy = yahoo_spark([s for s, _ in TILES])
+    return {'tiles': [{'symbol': s, 'label': l, **live.get(s, {})} for s, l in TILES], 'busy': busy}
 
 
 # ---------- FX converter: ECB reference rates (daily, ~30 currencies) with Yahoo's live quotes on top ----------
@@ -3151,8 +3189,11 @@ class Handler(BaseHTTPRequestHandler):
                 '/api/members': lambda: members(one_sym(qs)),
                 '/api/fx': lambda: fx_rates(),
                 '/api/wei': wei,
+                '/api/tiles': tiles,
                 '/api/most': lambda: most(qs.get('kind', 'gainers')),
                 '/api/eco': eco,
+                '/api/fa': lambda: fa_data(qs.get('symbol', '').upper()[:12], qs.get('freq', 'annual')),
+                '/api/filings': lambda: filings_data(qs.get('symbol', '').upper()[:12]),
                 '/api/nq': lambda: nq_data(qs.get('symbol', '').upper()[:12], qs.get('kind', '')),
                 '/api/des': lambda: des(one_sym(qs), qs.get('name', '')[:80], qs.get('isin', '').upper()[:12]),
                 '/api/earnings': earnings,

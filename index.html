@@ -18,6 +18,7 @@
 }
 *{box-sizing:border-box}
 [hidden]{display:none!important}  /* the hidden attribute wins over any display rule */
+html{zoom:.84}  /* default UI scale; keep the browser at 100% (Cmd+0) */
 html,body{height:100%;margin:0}
 body{background:var(--bg);color:var(--fg);font-family:var(--f-ui);font-size:12px;overflow:hidden}
 button{font:inherit;color:inherit}
@@ -70,10 +71,20 @@ a{color:inherit;text-decoration:none}
 @keyframes tape{to{transform:translateX(-50%)}}
 
 .main{position:relative;display:grid;min-height:0;gap:1px;background:var(--line);border:1px solid var(--line);
-  grid-template-columns:minmax(330px,360px) minmax(0,1.2fr) minmax(0,.85fr) minmax(380px,1fr);
+  grid-template-columns:minmax(300px,330px) minmax(0,1.2fr) minmax(0,.85fr) 370px;
   grid-template-rows:minmax(0,60fr) minmax(0,40fr);
   grid-template-areas:"watch chart chart news" "watch actions prints events"}
+.snap{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 22px;padding:6px 10px;font-family:var(--f-data);font-size:11.5px}
+.snap h5{grid-column:1/-1;margin:8px 0 2px;font-size:11px;font-weight:500;color:var(--dim);border-bottom:1px solid var(--line);padding-bottom:2px}
+.snap div{display:flex;justify-content:space-between;gap:8px;padding:1px 0}
+.snap div span:first-child{color:var(--dim)}
+.snap canvas{grid-column:1/-1;width:100%;height:70px}
 .panel{background:var(--panel);display:flex;flex-direction:column;min-height:0;min-width:0;position:relative}
+.split{position:absolute;z-index:6;background:transparent;transition:background .15s}
+.split.v{top:0;bottom:0;width:7px;margin-left:-4px;cursor:col-resize}
+.split.h{height:7px;margin-top:-4px;cursor:row-resize}
+.split:hover,.split.on{background:color-mix(in oklab,var(--fg) 25%,transparent)}
+body.dragging{user-select:none} body.dragging iframe{pointer-events:none}
 #p-watch{grid-area:watch} #p-chart{grid-area:chart} #p-news{grid-area:news} #p-actions{grid-area:actions} #p-prints{grid-area:prints} #p-events{grid-area:events}
 .ph{display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-bottom:1px solid var(--line);flex:none;background:var(--panel)}
 .ph h2{margin:0;font-family:var(--f-data);font-size:12px;font-weight:500;letter-spacing:0;color:var(--fg);white-space:nowrap}
@@ -90,6 +101,9 @@ a{color:inherit;text-decoration:none}
 
 .wl-g{position:sticky;top:0;background:var(--panel);z-index:1;padding:6px 10px 3px;font-size:10px;letter-spacing:.14em;color:var(--dim);border-bottom:1px solid var(--line);text-transform:uppercase}
 .wl-r,.qm-h{display:grid;grid-template-columns:12px minmax(0,1fr) 78px 60px 56px;gap:4px;align-items:center;padding:1px 8px 1px 4px;cursor:pointer;border-bottom:1px solid color-mix(in oklab,var(--line) 45%,transparent)}
+.qm-add{flex:none;border-top:1px solid var(--line);padding:3px 6px}
+.qm-add input{width:100%;background:transparent;border:0;outline:0;color:var(--fg);font:11.5px var(--f-data);padding:3px 2px}
+.qm-add input::placeholder{color:var(--faint)}
 .qm-h{cursor:default;color:var(--dim);font-size:11px;border-bottom:1px solid var(--line);flex:none}
 .qm-h span:nth-child(n+3){text-align:right}
 .wl-r .spark,.wl-r .wl-n{display:none}
@@ -190,7 +204,7 @@ td{text-align:right;padding:1px 6px;white-space:nowrap}
 .cal tr:hover td{background:var(--panel-2)}
 .cal tr.mine td{background:color-mix(in oklab,var(--cyan) 10%,transparent)}
 .cal .sym{color:var(--fg);font-weight:500}
-.cal td:first-child{max-width:118px;overflow:hidden;text-overflow:ellipsis}
+.cal td:first-child{max-width:96px;overflow:hidden;text-overflow:ellipsis}
 .cal .when{color:var(--dim);font-size:11px}
 
 .nfilter{display:flex;gap:6px;align-items:center;padding:4px 8px;border-bottom:1px solid var(--line);flex:none}
@@ -266,6 +280,10 @@ small.cy,i.cy{color:var(--dim);font-size:.62em;font-weight:400;font-style:normal
 .memb td.bar i.u{background:var(--up)} .memb td.bar i.d{background:var(--down)}
 .des-page{position:absolute;inset:0;z-index:15;background:var(--panel);display:flex;flex-direction:column;min-height:0}
 .wei{padding:12px 18px;overflow:auto}
+.info table{max-width:1200px}
+.info td.l{max-width:340px;overflow:hidden;text-overflow:ellipsis}
+.info tr.hd td{color:var(--fg);font-weight:600}
+.info a{color:var(--fg);text-decoration:underline;text-decoration-color:var(--faint)}
 .pg-tabs{display:flex;gap:4px;margin-right:12px;flex-wrap:wrap}
 .pg-tabs button{background:transparent;border:1px solid var(--line);color:var(--dim);font-size:11px;padding:1px 8px;cursor:pointer}
 .pg-tabs button.on{color:#fff;background:var(--acc);border-color:var(--acc)}
@@ -356,7 +374,7 @@ small.cy,i.cy{color:var(--dim);font-size:.62em;font-weight:400;font-style:normal
 .tv-hot{margin:2px -8px -8px;border-top:1px solid var(--line)}
 .tv-hot-h{padding:5px 10px;font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--down);background:var(--panel-2);border-bottom:1px solid var(--line)}
 .tv{display:flex;flex-direction:column;gap:6px;padding:8px}
-.tv-frame{position:relative;width:min(100%,260px);align-self:center;aspect-ratio:16/9;background:#000;border:1px solid var(--line)}
+.tv-frame{position:relative;aspect-ratio:16/9;background:#000;border:1px solid var(--line)}
 .tv-frame iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
 .tv-shield{position:absolute;inset:0;cursor:pointer;background:transparent}
 .tv-own{display:flex;gap:4px}
@@ -413,6 +431,10 @@ kbd{font-family:var(--f-data);font-size:10px;border:1px solid var(--faint);paddi
       <header class="ph"><h2>DES</h2><span class="meta" id="desMeta"></span><span class="sp"></span><button type="button" class="des-x" id="desClose" title="Close (Esc)">✕</button></header>
       <div class="pb" id="desBox"></div>
     </section>
+    <section class="des-page" id="infoPage" hidden aria-label="Company data">
+      <header class="ph"><h2 id="infoH">FA</h2><span class="meta" id="infoMeta"></span><span class="sp"></span><span class="pg-tabs" id="infoTabs"></span><button type="button" class="des-x" id="infoClose" title="Close (Esc)">✕</button></header>
+      <div class="pb wei info" id="infoBox"></div>
+    </section>
     <section class="des-page" id="mostPage" hidden aria-label="Top movers">
       <header class="ph"><h2>MOST</h2><span class="meta" id="mostMeta">US top movers</span><span class="sp"></span><span class="pg-tabs" id="mostTabs"><button type="button" data-k="gainers">Gainers</button><button type="button" data-k="losers">Losers</button><button type="button" data-k="active">Most active</button></span><button type="button" class="des-x" id="mostClose" title="Close (Esc)">✕</button></header>
       <div class="pb wei" id="mostBox"></div>
@@ -452,6 +474,7 @@ kbd{font-family:var(--f-data);font-size:10px;border:1px solid var(--faint);paddi
       <div class="tabs" id="qmTabs"></div>
       <div class="qm-h"><span></span><span>Ticker</span><span>Last</span><span>Chg</span><span>Chg %</span></div>
       <div class="pb" id="watch" role="listbox" aria-label="Quote monitor"></div>
+      <form class="qm-add" id="qmAdd"><input id="qmIn" placeholder="Add tickers, e.g. AMD, SAP GY, US0378331005" spellcheck="false" autocomplete="off" aria-label="Add tickers to the quote monitor"></form>
     </section>
 
     <section class="panel" id="p-chart">
@@ -504,8 +527,9 @@ kbd{font-family:var(--f-data);font-size:10px;border:1px solid var(--faint);paddi
     </section>
 
     <section class="panel" id="p-prints">
-      <header class="ph"><h2>Time &amp; sales</h2><span class="meta" id="printsMeta"></span></header>
-      <div class="pb"><table><thead><tr><th>Time</th><th id="printsCcy">Price</th><th>Size</th></tr></thead><tbody id="prints"></tbody></table><p class="empty" id="printsEmpty">Waiting for trades…</p></div>
+      <header class="ph"><h2 id="prH">Snapshot</h2><span class="meta" id="printsMeta"></span><span class="sp"></span><div class="seg" id="prSeg"><button type="button" data-v="snap" aria-pressed="true">Snapshot</button><button type="button" data-v="ts" aria-pressed="false">Time &amp; sales</button></div></header>
+      <div class="pb" id="snapBox"><div class="snap" id="snap"></div></div>
+      <div class="pb" id="tsBox" hidden><table><thead><tr><th>Time</th><th id="printsCcy">Price</th><th>Size</th></tr></thead><tbody id="prints"></tbody></table><p class="empty" id="printsEmpty">Waiting for trades…</p></div>
       <p class="srcnote" id="printsSrc"></p>
     </section>
 
@@ -824,6 +848,21 @@ function buildWatch() {
   for (const s of watch) dirtySyms.add(s);
   buildTape();
 }
+$('#qmAdd').addEventListener('submit', async e => {  // one or many: "AMD, SAP GY; US0378331005"
+  e.preventDefault();
+  const toks = $('#qmIn').value.split(/[,;\n]+/).map(t => t.trim()).filter(Boolean).slice(0, 50); if (!toks.length) return;
+  $('#qmIn').value = ''; $('#qmIn').placeholder = `Adding ${toks.length}…`;
+  const added = [], missed = [];
+  for (const t of toks) {
+    try { const r = (await api('/api/search?q=' + enc(t))).results[0];
+      if (!r) { missed.push(t); continue; }
+      ensure(r.symbol, r); if (!watch.includes(r.symbol)) { watch.push(r.symbol); saveMeta(inst[r.symbol]); added.push(r.symbol); } }
+    catch { missed.push(t); }
+  }
+  if (added.length) { store.set('watch', watch); qmTab = 'All'; buildWatch(); pollQuotes(added); openStream(); updHeat(); updWatch(); }
+  $('#qmIn').placeholder = 'Add tickers, e.g. AMD, SAP GY, US0378331005';
+  toast(`${added.length ? 'Added ' + added.map(disp).join(', ') : 'Nothing new added'}${missed.length ? ' · not found: ' + missed.join(', ') : ''}`);
+});
 $('#qmTabs').addEventListener('click', e => { const b = e.target.closest('[data-g]'); if (!b) return; qmTab = b.dataset.g; store.set('qmTab', qmTab); buildWatch(); updWatch(); });
 function renderWatchNames() { for (const s in rows) { const x = inst[s]; rows[s].name.textContent = x.name; rows[s].el.title = x.name + (x.isin ? ' · ' + x.isin : ''); } }
 function updWatch() {
@@ -1142,9 +1181,10 @@ for (const k of ['bg', 'panel', 'line', 'fg', 'dim', 'faint', 'amber', 'cyan', '
 const FONT = '11px ' + cs.getPropertyValue('--f-data');
 const cv = $('#chart'), ctx = cv.getContext('2d');
 let W = 0, H = 0, CW = 8, hover = null, dirty = true;
+const zoomF = () => parseFloat(getComputedStyle(document.documentElement).zoom) || 1;
 function resize() {
-  const r = $('#chartWrap').getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
-  W = r.width; H = r.height; cv.width = Math.max(1, Math.round(W * dpr)); cv.height = Math.max(1, Math.round(H * dpr));
+  const wrap = $('#chartWrap'), dpr = (window.devicePixelRatio || 1) * zoomF();
+  W = wrap.clientWidth; H = wrap.clientHeight; cv.width = Math.max(1, Math.round(W * dpr)); cv.height = Math.max(1, Math.round(H * dpr));
   cv.style.width = W + 'px'; cv.style.height = H + 'px'; ctx.setTransform(dpr, 0, 0, dpr, 0, 0); dirty = true;
 }
 new ResizeObserver(resize).observe($('#chartWrap'));
@@ -1338,7 +1378,7 @@ function drawMeasure(x, dec) {
 }
 cv.addEventListener('mousedown', e => {
   if (e.button !== 0) return;
-  const r = cv.getBoundingClientRect(), pt = chartPoint(e.clientX - r.left, e.clientY - r.top); if (!pt) return;
+  const r = cv.getBoundingClientRect(), z = zoomF(), pt = chartPoint((e.clientX - r.left) / z, (e.clientY - r.top) / z); if (!pt) return;
   mDown = { x: e.clientX, y: e.clientY };
   measure = { t0: pt.t, p0: pt.p, t1: pt.t, p1: pt.p }; measuring = true; dirty = true;
   e.preventDefault();
@@ -1351,10 +1391,10 @@ window.addEventListener('mouseup', e => {
 });
 window.addEventListener('mousemove', e => {
   if (!measuring) return;
-  const r = cv.getBoundingClientRect(), pt = chartPoint(e.clientX - r.left, e.clientY - r.top);
+  const r = cv.getBoundingClientRect(), z = zoomF(), pt = chartPoint((e.clientX - r.left) / z, (e.clientY - r.top) / z);
   if (pt) { measure.t1 = pt.t; measure.p1 = pt.p; dirty = true; }
 });
-cv.addEventListener('mousemove', e => { const r = cv.getBoundingClientRect(); hover = { x: e.clientX - r.left, y: e.clientY - r.top }; dirty = true; });
+cv.addEventListener('mousemove', e => { const r = cv.getBoundingClientRect(), z = zoomF(); hover = { x: (e.clientX - r.left) / z, y: (e.clientY - r.top) / z }; dirty = true; });
 cv.addEventListener('mouseleave', () => { hover = null; dirty = true; });
 cv.addEventListener('wheel', e => { e.preventDefault(); CW = Math.max(3, Math.min(28, CW * (e.deltaY < 0 ? 1.15 : 1 / 1.15))); dirty = true; }, { passive: false });
 (function loop() { if (dirty) { dirty = false; draw(); } requestAnimationFrame(loop); })();
@@ -1709,7 +1749,7 @@ function squarify(items, X, Y, W, H) {  // items sorted desc by v; returns [{...
   return out;
 }
 function nqCanvas(el, pts, fmtY, color) {  // simple line chart with min/max labels; pts = [[label, value]]
-  const dpr = devicePixelRatio || 1, W = el.clientWidth, H = el.clientHeight; el.width = W * dpr; el.height = H * dpr;
+  const dpr = (devicePixelRatio || 1) * zoomF(), W = el.clientWidth, H = el.clientHeight; el.width = W * dpr; el.height = H * dpr;
   const g = el.getContext('2d'); g.scale(dpr, dpr); g.clearRect(0, 0, W, H);
   const v = pts.map(p => p[1]).filter(nz); if (v.length < 2) return;
   const lo = Math.min(...v), hi = Math.max(...v), pad = (hi - lo) * .1 || 1, L = 6, R = 64, T = 14, B = 16;
@@ -1868,15 +1908,15 @@ function localMatches(q) {
   return Object.values(inst).filter(x => x.sym.toLowerCase().includes(ql) || disp(x.sym).toLowerCase().includes(ql) || x.name.toLowerCase().includes(ql) || (x.isin || '').toLowerCase() === ql)
     .slice(0, 8).map(x => ({ symbol: x.sym, name: x.name, isin: x.isin, group: x.group, type: x.group, live: x.live !== false }));
 }
-const CMDS = [['WEI', 'World equity indices'], ['MOST', 'US top movers'], ['ECO', 'Economic calendar'], ['FXCA', 'FX converter'], ['ALRT', 'Price alerts'], ['DES', 'Description']];
+const CMDS = [['DES', 'Description'], ['FA', 'Financial statements'], ['EM', 'Earnings matrix'], ['CF', 'SEC filings'], ['CN', 'Company news'], ['WEI', 'World equity indices'], ['MOST', 'US top movers'], ['ECO', 'Economic calendar'], ['FXCA', 'FX converter'], ['ALRT', 'Price alerts']];
 function cmdRows(q) {
   q = (q || '').trim().toUpperCase();
   return CMDS.filter(([c]) => !q || (q.length >= 2 && c.startsWith(q))).map(([c, d]) => ({ cmd: c,
-    name: c === 'DES' ? d + ' · ' + disp(sel) : c === 'ALRT' ? d + ((n => n ? ` · ${n} active` : '')(alerts.filter(a => !a.hit).length)) : d }));
+    name: ['DES', 'FA', 'EM', 'CF', 'CN'].includes(c) ? d + ' · ' + disp(sel) : c === 'ALRT' ? d + ((n => n ? ` · ${n} active` : '')(alerts.filter(a => !a.hit).length)) : d }));
 }
 function runCmd(c) {
   qIn.value = ''; closeResults(); qIn.blur(); desCmd = false;
-  ({ WEI: openWei, MOST: openMost, ECO: openEco, FXCA: () => openFxc(), ALRT: openAlrt, DES: openDes })[c]();
+  ({ WEI: openWei, MOST: openMost, ECO: openEco, FXCA: () => openFxc(), ALRT: openAlrt })[c]?.() ?? openFor(c);
 }
 qIn.addEventListener('focus', () => { if (!qIn.value.trim()) { results = cmdRows(''); active = -1; renderResults(); } });
 function renderResults(note) {
@@ -1893,12 +1933,140 @@ function closeResults() { clearTimeout(searchT); searchId++; resEl.hidden = true
 let fxcOpen = false, fxc = null, fxcTimer;
 const FX_TOP = ['EUR', 'USD', 'GBP', 'CHF', 'JPY', 'CNY', 'HKD', 'CAD', 'AUD', 'SEK', 'NOK', 'DKK', 'PLN', 'BTC', 'ETH'];
 const fxSt = store.get('fxc', { amt: '1000', from: 'EUR', to: 'USD' });
+// ---------- draggable panel borders: column widths and the row split, saved per browser; double-click resets ----------
+const LAY_DEF = { c1: 330, c2: 1.2, c3: .85, c4: 370, r1: 60 };
+let lay = { ...LAY_DEF, ...store.get('layout', {}) };
+const mainEl = $('.main'), wide = () => !matchMedia('(max-width:1100px)').matches;
+function applyLayout() {
+  if (!wide()) { mainEl.style.gridTemplateColumns = mainEl.style.gridTemplateRows = ''; return; }
+  mainEl.style.gridTemplateColumns = `${lay.c1}px minmax(0,${lay.c2}fr) minmax(0,${lay.c3}fr) ${lay.c4}px`;
+  mainEl.style.gridTemplateRows = `minmax(0,${lay.r1}fr) minmax(0,${100 - lay.r1}fr)`;
+  requestAnimationFrame(placeSplits);
+}
+const splits = ['c1', 'c23', 'c3', 'r'].map(k => { const d = document.createElement('div'); d.className = 'split ' + (k === 'r' ? 'h' : 'v'); d.dataset.k = k; mainEl.append(d); return d; });
+function placeSplits() {
+  const on = wide(), P = id => $('#' + id);
+  for (const d of splits) d.hidden = !on; if (!on) return;
+  const ch = P('p-chart'), ac = P('p-actions'), pr = P('p-prints'), nw = P('p-news');
+  const [a, b, c, r] = splits;
+  a.style.left = ch.offsetLeft + 'px';
+  b.style.left = pr.offsetLeft + 'px'; b.style.top = pr.offsetTop + 'px'; b.style.bottom = '0';
+  c.style.left = nw.offsetLeft + 'px';
+  r.style.top = ac.offsetTop + 'px'; r.style.left = ch.offsetLeft + 'px'; r.style.right = '0';
+}
+for (const d of splits) {
+  d.addEventListener('dblclick', () => { const k = d.dataset.k; if (k === 'c1') lay.c1 = LAY_DEF.c1; else if (k === 'c3') lay.c4 = LAY_DEF.c4; else if (k === 'c23') { lay.c2 = LAY_DEF.c2; lay.c3 = LAY_DEF.c3; } else lay.r1 = LAY_DEF.r1; store.set('layout', lay); applyLayout(); });
+  d.addEventListener('pointerdown', e => {
+    e.preventDefault(); d.setPointerCapture(e.pointerId); d.classList.add('on'); document.body.classList.add('dragging');
+    const k = d.dataset.k, z = zoomF(), x0 = e.clientX, y0 = e.clientY, st = { ...lay };
+    const W = mainEl.clientWidth, H = mainEl.clientHeight, mid = (W - st.c1 - st.c4), c2px = mid * st.c2 / (st.c2 + st.c3);
+    const move = ev => {
+      const dx = (ev.clientX - x0) / z, dy = (ev.clientY - y0) / z;
+      if (k === 'c1') lay.c1 = Math.max(320, Math.min(W * .4, st.c1 + dx));
+      else if (k === 'c3') lay.c4 = Math.max(260, Math.min(W * .45, st.c4 - dx));
+      else if (k === 'c23') { const n = Math.max(200, Math.min(mid - 200, c2px + dx)); lay.c2 = n / mid * 2; lay.c3 = (mid - n) / mid * 2; }
+      else lay.r1 = Math.max(25, Math.min(80, st.r1 + dy / H * 100));
+      applyLayout();
+    };
+    const up = () => { d.removeEventListener('pointermove', move); d.removeEventListener('pointerup', up); d.classList.remove('on'); document.body.classList.remove('dragging'); store.set('layout', lay); };
+    d.addEventListener('pointermove', move); d.addEventListener('pointerup', up);
+  });
+}
+addEventListener('resize', applyLayout);
+let nqResizeT, nqW = 0;
+new ResizeObserver(() => { const w = $('#caAlt').clientWidth + 'x' + $('#caAlt').clientHeight; if (w === nqW || $('#caAlt').hidden) return; nqW = w;
+  clearTimeout(nqResizeT); nqResizeT = setTimeout(() => { if (['holders', 'short'].includes(caTab)) loadNq(inst[sel], caTab, false); }, 150); }).observe($('#caAlt'));
+new ResizeObserver(() => requestAnimationFrame(placeSplits)).observe(mainEl);
+applyLayout();
+
+// ---------- Snapshot (key stats of the selected instrument) in the Time & sales slot ----------
+let prView = store.get('prView', 'snap'), snapReq = 0;
+function setPrView(v) {
+  prView = v; store.set('prView', v);
+  for (const b of $('#prSeg').children) b.setAttribute('aria-pressed', b.dataset.v === v);
+  $('#snapBox').hidden = v !== 'snap'; $('#tsBox').hidden = v !== 'ts'; $('#prH').textContent = v === 'snap' ? 'Snapshot' : 'Time & sales';
+  if (v === 'snap') loadSnap();
+}
+$('#prSeg').addEventListener('click', e => { const b = e.target.closest('[data-v]'); if (b) setPrView(b.dataset.v); });
+async function loadSnap() {
+  if (prView !== 'snap') return;
+  const x = inst[sel], id = ++snapReq, box = $('#snap');
+  if (box.dataset.sym !== x.sym) box.innerHTML = '<p class="empty" style="grid-column:1/-1">Loading…</p>';
+  box.dataset.sym = x.sym;
+  let d; try { d = await api(`/api/des?symbol=${enc(x.sym)}&name=${enc(x.name)}&isin=${enc(x.isin || '')}`); } catch (e) { if (id === snapReq) box.innerHTML = `<p class="empty" style="grid-column:1/-1">Couldn't load: ${esc(e.message)}</p>`; return; }
+  if (id !== snapReq) return;
+  const p = d.profile || {}, v = d.valuation || {}, t = d.trading || {}, cy = t.currency || p.currency || '';
+  const kv = (k, val) => val == null || val === '' || (typeof val === 'number' && !isFinite(val)) ? '' : `<div><span>${k}</span><span>${val}</span></div>`;
+  const pc = (val, dgt = 1) => val == null || !isFinite(val) ? null : `<span class="${cls(val)}">${(val >= 0 ? '+' : '') + val.toFixed(dgt)}%</span>`;
+  const n2 = val => val == null || !isFinite(val) ? null : val.toFixed(2);
+  const mc = p.marketCapitalization ? p.marketCapitalization * 1e6 : null;
+  const sec = (h, rows) => rows.join('') ? `<h5>${h}</h5>${rows.join('')}` : '';
+  box.innerHTML = (t.spark && t.spark.length > 1 ? '<canvas id="snapC"></canvas>' : '')
+    + sec('Market', [kv('Exchange', esc(t.exchange || p.exchange || '')), kv('Currency', esc(cy)), kv('Market cap', mc ? compact(mc) : null), kv('Shares out', p.shareOutstanding ? compact(p.shareOutstanding * 1e6) : null), kv('Beta', n2(t.beta ?? v.beta))])
+    + sec('Trading', [kv('52w high', t.hi52 != null ? fmt(t.hi52, 2) : null), kv('52w low', t.lo52 != null ? fmt(t.lo52, 2) : null), kv('Vol today', t.volToday != null ? compact(t.volToday) : null), kv('Avg vol 30d', t.avgVol30 != null ? compact(t.avgVol30) : null), kv('Volatility 30d', t.vol30 != null ? t.vol30.toFixed(1) + '%' : null)])
+    + sec('Performance', [kv('1 month', pc(t.perf1m)), kv('3 months', pc(t.perf3m)), kv('YTD', pc(t.perfYtd)), kv('1 year', pc(t.perf1y))])
+    + sec('Valuation', [kv('P/E ttm', n2(v.peTTM)), kv('P/B', n2(v.pbAnnual)), kv('P/S ttm', n2(v.psTTM)), kv('EPS ttm', n2(v.epsTTM)), kv('Div yield', v.dividendYieldIndicatedAnnual != null ? v.dividendYieldIndicatedAnnual.toFixed(2) + '%' : null)])
+    + sec('Fundamentals', [kv('Revenue growth', pc(v.revenueGrowthTTMYoy)), kv('Gross margin', v.grossMarginTTM != null ? v.grossMarginTTM.toFixed(1) + '%' : null), kv('Net margin', v.netProfitMarginTTM != null ? v.netProfitMarginTTM.toFixed(1) + '%' : null), kv('ROE', v.roeTTM != null ? v.roeTTM.toFixed(1) + '%' : null)]);
+  if (!box.textContent.trim() && !t.spark) box.innerHTML = '<p class="empty" style="grid-column:1/-1">No snapshot data for this instrument.</p>';
+  const c = $('#snapC'); if (c) { const sp = t.spark.map(q => Array.isArray(q) ? q[1] : q.c ?? q).filter(nz); nqCanvas(c, sp.map((val, i) => [i === 0 ? '1y ago' : i === sp.length - 1 ? 'now' : '', val]), val => fmt(val, 2), sp[sp.length - 1] >= sp[0] ? COL.up : COL.down); }
+}
+
 // ---------- overlay pages (DES, FXCA, WEI, ALRT, MOST, ECO): only one is open at a time ----------
 function closePages() {
   if (desOpen) closeDes(); if (fxcOpen) closeFxc();
   if (typeof weiOpen !== 'undefined' && weiOpen) closeWei(); if (typeof alrtOpen !== 'undefined' && alrtOpen) closeAlrt();
-  if (mostOpen) closeMost(); if (ecoOpen) closeEco();
+  if (mostOpen) closeMost(); if (ecoOpen) closeEco(); if (infoOpen) closeInfo();
 }
+// ---------- FA (financial statements), CF (SEC filings), EM (earnings matrix) for the selected US stock ----------
+let infoOpen = false, infoKind = 'FA', infoSub = { FA: store.get('faSub', 'Income statement'), FAF: store.get('faFreq', 'annual'), CF: 'All' }, infoReq = 0;
+const INFO_T = { FA: 'Financials', CF: 'Filings', EM: 'Earnings matrix' };
+function openInfo(kind) { closePages(); infoOpen = true; infoKind = kind; $('#infoPage').hidden = false; $('#infoH').textContent = kind; loadInfo(true); }
+function closeInfo() { infoOpen = false; $('#infoPage').hidden = true; }
+const faVal = v => { if (v == null || v === '' || v === '--') return '—'; const neg = /^\(|^-/.test(v), n = parseFloat(String(v).replace(/[^0-9.]/g, '')); if (!isFinite(n)) return esc(v); const x = n * 1000 * (neg ? -1 : 1); return `<span class="${neg ? 'down' : ''}">${(neg ? '-' : '') + compact(Math.abs(x))}</span>`; };
+async function loadInfo(reset) {
+  const x = inst[sel], id = ++infoReq, box = $('#infoBox');
+  $('#infoMeta').textContent = INFO_T[infoKind] + ' · ' + disp(x.sym) + ' · ' + x.name;
+  if (reset) box.innerHTML = '<p class="empty">Loading…</p>';
+  try {
+    if (infoKind === 'FA') {
+      const d = await api(`/api/fa?symbol=${enc(x.sym)}&freq=${infoSub.FAF}`); if (id !== infoReq) return;
+      if (d.error) { box.innerHTML = `<p class="empty">${esc(d.error)}</p>`; $('#infoTabs').innerHTML = ''; return; }
+      const names = Object.keys(d.tables); if (!d.tables[infoSub.FA]) infoSub.FA = names[0];
+      $('#infoTabs').innerHTML = names.map(n => `<button type="button" data-t="${esc(n)}" class="${n === infoSub.FA ? 'on' : ''}">${esc(n)}</button>`).join('') + '<span style="width:10px"></span>' + ['annual', 'quarterly'].map(f => `<button type="button" data-f="${f}" class="${f === infoSub.FAF ? 'on' : ''}">${f[0].toUpperCase() + f.slice(1)}</button>`).join('');
+      const t = d.tables[infoSub.FA], ratio = infoSub.FA === 'Ratios';
+      box.innerHTML = t.rows.length ? `<table><thead><tr><th class="l">${ratio ? '' : 'USD'}</th>${t.periods.map(p => `<th>${esc(p)}</th>`).join('')}</tr></thead><tbody>${t.rows.map(r => {
+          const hd = r.slice(1).every(v => !v); return `<tr class="${hd ? 'hd' : ''}"><td class="l">${esc(r[0] || '')}</td>${r.slice(1).map(v => `<td>${ratio ? esc(v || '—') : faVal(v)}</td>`).join('')}</tr>`; }).join('')}</tbody></table>`
+        + '<p class="des-note">Standardised statements from Nasdaq (data provider: Zacks). Click a tab for the other statements.</p>' : '<p class="empty">No data.</p>';
+    } else if (infoKind === 'CF') {
+      const d = await api(`/api/filings?symbol=${enc(x.sym)}`); if (id !== infoReq) return;
+      if (d.error) { box.innerHTML = `<p class="empty">${esc(d.error)}</p>`; $('#infoTabs').innerHTML = ''; return; }
+      const grp = f => /^10-K|^20-F|^40-F/.test(f) ? 'Annual' : /^10-Q|^6-K/.test(f) ? 'Quarterly' : /^8-K/.test(f) ? '8-K' : /^(3|4|5)(\/A)?$|^144/.test(f) ? 'Insiders' : /^(SC 13|13F|SCHEDULE 13)/.test(f) ? 'Ownership' : /^(DEF|DEFA|PRE)/.test(f) ? 'Proxy' : /^(S-|F-|424|FWP)/.test(f) ? 'Offerings' : 'Other';
+      const tabs = ['All', 'Annual', 'Quarterly', '8-K', 'Proxy', 'Ownership', 'Insiders', 'Offerings', 'Other'], cnt = {}; for (const f of d.filings) cnt[grp(f.form)] = (cnt[grp(f.form)] || 0) + 1;
+      $('#infoTabs').innerHTML = tabs.filter(t => t === 'All' || cnt[t]).map(t => `<button type="button" data-c="${t}" class="${t === infoSub.CF ? 'on' : ''}">${t}${t === 'All' ? '' : ' ' + cnt[t]}</button>`).join('');
+      const rows = d.filings.filter(f => infoSub.CF === 'All' || grp(f.form) === infoSub.CF);
+      box.innerHTML = rows.length ? `<table><thead><tr><th class="l">Filed</th><th class="l">Form</th><th class="l">Type</th><th class="l">Document</th></tr></thead><tbody>${rows.map(f => `<tr><td class="l">${esc(f.filed)}</td><td class="l"><b>${esc(f.form)}</b></td><td class="l flat">${grp(f.form)}</td><td class="l">${f.url ? `<a href="${esc(safeUrl(f.url))}" target="_blank" rel="noopener noreferrer">open on EDGAR</a>` : '—'}</td></tr>`).join('')}</tbody></table><p class="des-note">Last 3 years of SEC EDGAR filings via Finnhub.</p>` : '<p class="empty">No filings.</p>';
+    } else {
+      const d = await api(`/api/nq?symbol=${enc(x.sym)}&kind=analyst`); if (id !== infoReq) return;
+      $('#infoTabs').innerHTML = '';
+      if (d.error) { box.innerHTML = `<p class="empty">${esc(d.error)}</p>`; return; }
+      const px = regLast(x), row = (r, prev) => { const pe = px && r.eps > 0 ? px / r.eps : null, g = prev && prev.eps ? (r.eps / prev.eps - 1) * 100 : null;
+        return `<tr><td class="l">${esc(r.end || '')}</td><td>${fmt(r.eps, 2)}</td><td>${fmt(r.lo, 2)} – ${fmt(r.hi, 2)}</td><td class="${cls(g)}">${g == null ? '—' : pctText(g)}</td><td>${pe ? pe.toFixed(1) + '×' : '—'}</td><td>${r.n ?? '—'}</td><td><span class="up">${r.up ?? 0}↑</span> <span class="down">${r.down ?? 0}↓</span></td></tr>`; };
+      const tab = (rows, h) => rows.length ? `<table><thead><tr><th class="l">${h}</th><th>EPS est</th><th>Range</th><th>Growth</th><th>Implied P/E</th><th>Analysts</th><th>Revisions 4w</th></tr></thead><tbody>${rows.map((r, i) => row(r, rows[i - 1])).join('')}</tbody></table>` : '';
+      const n = (d.buy || 0) + (d.hold || 0) + (d.sell || 0), up = d.target && px ? (d.target / px - 1) * 100 : null;
+      box.innerHTML = `<dl class="kv" style="display:flex;gap:4px 26px;flex-wrap:wrap;margin:0 0 12px"><div><dt class="flat">Last</dt><dd>${px != null ? pxText(x, px) : '—'}</dd></div><div><dt class="flat">Price target</dt><dd>${fmt(d.target, 2)} <span class="${cls(up)}">${pctText(up)}</span></dd></div><div><dt class="flat">Target range</dt><dd>${fmt(d.lo, 2)} – ${fmt(d.hi, 2)}</dd></div><div><dt class="flat">Buy / Hold / Sell</dt><dd><span class="up">${d.buy ?? 0}</span> / ${d.hold ?? 0} / <span class="down">${d.sell ?? 0}</span>${n ? ` (${Math.round(d.buy / n * 100)}% buy)` : ''}</dd></div></dl>`
+        + tab(d.yearly, 'Fiscal year') + tab(d.quarterly, 'Quarter')
+        + '<p class="des-note">Consensus EPS estimates and price targets from Nasdaq (Zacks). Implied P/E = last price ÷ EPS estimate; growth vs the previous period in the table.</p>';
+    }
+  } catch (e) { if (id === infoReq) box.innerHTML = `<p class="empty">Couldn't load: ${esc(e.message)}</p>`; }
+}
+$('#infoClose').addEventListener('click', closeInfo);
+$('#infoTabs').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.t) { infoSub.FA = b.dataset.t; store.set('faSub', infoSub.FA); }
+  if (b.dataset.f) { infoSub.FAF = b.dataset.f; store.set('faFreq', infoSub.FAF); }
+  if (b.dataset.c) infoSub.CF = b.dataset.c;
+  loadInfo(!!b.dataset.f);
+});
 // ---------- MOST: US gainers / losers / most active from Yahoo's screeners ----------
 const MOST_RX = /^MOST$/i;
 let mostOpen = false, mostTimer, mostKind = store.get('most', 'gainers');
@@ -2028,14 +2196,14 @@ async function loadWei() {
     const d = await api('/api/wei'), now = Date.now() / 1000;
     const all = d.regions.flatMap(r => r.rows).filter(x => x.last != null && x.prev);
     const maxAbs = Math.max(1, ...all.map(x => Math.abs(x.last / x.prev - 1) * 100));
-    let h = '<table><thead><tr><th class="l">Index</th><th class="l">Ctry</th><th>Last</th><th>Net chg</th><th>% chg</th><th class="bar"></th><th>Time</th></tr></thead><tbody>';
+    let h = '<table><thead><tr><th class="l">Index</th><th class="l">Ctry</th><th>Last</th><th>Net chg</th><th>% chg</th><th class="bar"></th><th>YTD</th><th>Time</th></tr></thead><tbody>';
     for (const r of d.regions) {
-      h += `<tr class="reg"><td colspan="7">${esc(r.region)}</td></tr>`;
+      h += `<tr class="reg"><td colspan="8">${esc(r.region)}</td></tr>`;
       for (const x of r.rows) {
         const ch = x.last != null && x.prev ? x.last - x.prev : null, pc = ch != null ? ch / x.prev * 100 : null;
         const old = x.t && now - x.t > 1200, w = pc != null ? Math.min(50, Math.abs(pc) / maxAbs * 50) : 0;
         const tm = !x.t ? '—' : old ? 'Close ' + new Date(x.t * 1000).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : new Date(x.t * 1000).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-        h += `<tr data-s="${esc(x.symbol)}" data-n="${esc(x.name)}" title="Open the ${esc(x.name)} chart"><td class="l"><b>${esc(x.name)}</b></td><td class="l">${esc(x.country)}</td><td>${fmt(x.last, 2)}</td><td class="${cls(ch)}">${ch == null ? '—' : (ch >= 0 ? '+' : '') + fmt(ch, 2)}</td><td class="${cls(pc)}">${pctText(pc)}</td><td class="bar"><i class="${cls(pc)}" style="width:${w.toFixed(1)}%"></i></td><td class="tm${old ? ' old' : ''}">${tm}</td></tr>`;
+        h += `<tr data-s="${esc(x.symbol)}" data-n="${esc(x.name)}" title="Open the ${esc(x.name)} chart"><td class="l"><b>${esc(x.name)}</b></td><td class="l">${esc(x.country)}</td><td>${fmt(x.last, 2)}</td><td class="${cls(ch)}">${ch == null ? '—' : (ch >= 0 ? '+' : '') + fmt(ch, 2)}</td><td class="${cls(pc)}">${pctText(pc)}</td><td class="bar"><i class="${cls(pc)}" style="width:${w.toFixed(1)}%"></i></td>${(y => `<td class="${cls(y)}">${pctText(y)}</td>`)(x.last != null && x.yearRef ? (x.last / x.yearRef - 1) * 100 : null)}<td class="tm${old ? ' old' : ''}">${tm}</td></tr>`;
       }
     }
     $('#weiBox').innerHTML = h + '</tbody></table>' + (d.notes || []).map(n => `<p class="des-note">${esc(n)}</p>`).join('') + '<p class="des-note">Index levels from Yahoo Finance; some exchanges are delayed 15–20 minutes. Change is against the previous close.</p>';
@@ -2119,9 +2287,14 @@ $('#fxcSwap').addEventListener('click', () => { [fxSt.from, fxSt.to] = [fxSt.to,
 $('#fxcRows').addEventListener('click', e => { const tr = e.target.closest('tr[data-c]'); if (!tr) return; fxSt.to = tr.dataset.c; $('#fxcTo').value = fxSt.to; renderFxc(); });
 
 // "<ticker | ISIN | name> DES" opens the description page (Bloomberg style); a bare "DES" opens it for the open instrument.
-let desCmd = false;
-const DES_RX = /(^|\s)DES$/i;
-function splitCmd() { const raw = qIn.value.trim(); desCmd = DES_RX.test(raw); return raw.replace(DES_RX, '').trim(); }
+let desCmd = '';  // a page mnemonic typed after (or instead of) a security: DES, FA, CF, EM or CN
+const DES_RX = /(^|\s)(DES|FA|CF|EM|CN)$/i;
+function splitCmd() { const raw = qIn.value.trim(), m = raw.match(DES_RX); desCmd = m ? m[2].toUpperCase() : ''; return raw.replace(DES_RX, '').trim(); }
+function openFor(mn) {
+  if (mn === 'DES') openDes();
+  else if (mn === 'CN') { closePages(); $('#newsTabs [data-k="selected"]').click(); }
+  else openInfo(mn);
+}
 qIn.addEventListener('input', () => {
   clearTimeout(searchT);
   if (MOST_RX.test(qIn.value.trim())) { results = cmdRows('MOST'); active = 0; renderResults(); return; }
@@ -2130,8 +2303,8 @@ qIn.addEventListener('input', () => {
   if (WEI_RX.test(qIn.value.trim())) { results = cmdRows('WEI'); active = 0; renderResults(); return; }
   if (FXC_RX.test(qIn.value.trim())) { const c = fxcCmd(qIn.value.trim()); results = []; active = -1; renderResults(c ? 'Enter opens the FX converter' + (c.amt || c.from ? ` · ${[c.amt, c.from, c.to && '→ ' + c.to].filter(Boolean).join(' ')}` : '') : 'FXCA takes: [amount] [from] [to], e.g. 100 USD CHF FXCA'); return; }
   const q = splitCmd();
-  if (!q) { if (desCmd) { results = []; active = -1; renderResults(`Enter opens DES for ${disp(sel)}`); } else { results = cmdRows(''); active = -1; renderResults(); } return; }
-  const hint = desCmd ? 'Enter opens DES for the selected row' : '';
+  if (!q) { if (desCmd) { results = []; active = -1; renderResults(`Enter opens ${desCmd} for ${disp(sel)}`); } else { results = cmdRows(''); active = -1; renderResults(); } return; }
+  const hint = desCmd ? `Enter opens ${desCmd} for the selected row` : '';
   const cmds = desCmd ? [] : cmdRows(q);
   results = [...cmds, ...localMatches(q)]; active = results.length ? 0 : -1; renderResults(hint || 'Searching…');
   searchT = setTimeout(async () => {
@@ -2160,7 +2333,7 @@ qIn.addEventListener('keydown', async e => {
   }
   if (e.key === 'Enter' && desCmd) {
     const q = splitCmd();
-    if (!q) { e.preventDefault(); qIn.value = ''; closeResults(); qIn.blur(); desCmd = false; openDes(); return; }
+    if (!q) { e.preventDefault(); const mn = desCmd; qIn.value = ''; closeResults(); qIn.blur(); desCmd = ''; openFor(mn); return; }
     if (!results[active]) {  // pressed Enter before the search answered
       e.preventDefault();
       try { const r = await api('/api/search?q=' + enc(q)); if (r.results[0]) pickResult(r.results[0]); else toast(`Nothing found for "${q}"`); }
@@ -2182,7 +2355,7 @@ resEl.addEventListener('click', e => {
 qIn.addEventListener('blur', () => setTimeout(closeResults, 120));
 document.addEventListener('mousedown', e => { if (!resEl.hidden && !e.target.closest('.search')) closeResults(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !resEl.hidden) closeResults(); });
-function pickResult(r) { if (r.cmd) { runCmd(r.cmd); return; } const des = desCmd; desCmd = false; qIn.value = ''; closeResults(); qIn.blur(); open(r); if (des) openDes(); }
+function pickResult(r) { if (r.cmd) { runCmd(r.cmd); return; } const mn = desCmd; desCmd = ''; qIn.value = ''; closeResults(); qIn.blur(); open(r); if (mn) openFor(mn); }
 function open(r) { const x = ensure(r.symbol, r); if (r.live === false) x.live = false; if (r.data === 'delayed') { x.delayed = true; x.live = false; } select(r.symbol); }
 
 // ---------- selection ----------
@@ -2197,7 +2370,7 @@ function select(sym) {
   queueProfile(sym, true); loadHistory(x); openStream();
   if (!x.q) pollQuotes([sym]);
   if (newsTab === 'selected') loadNews(true);
-  loadActions(true); loadListings(x); if (desOpen) loadDes();
+  loadActions(true); loadListings(x); if (desOpen) loadDes(); if (infoOpen) loadInfo(true); loadSnap();
   if (x.delayed) fetchDelayed(x);
   if (sym.startsWith('YH:')) pollYahoo();
   if (sym.startsWith('OANDA:') && !FUT[sym]) pollRefs();
@@ -2231,7 +2404,7 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && fxcOpen && !typing) { closeFxc(); return; }
   if (e.key === 'Escape' && weiOpen && !typing) { closeWei(); return; }
   if (e.key === 'Escape' && alrtOpen) { closeAlrt(); return; }
-  if (e.key === 'Escape' && (mostOpen || ecoOpen) && !typing) { closePages(); return; }
+  if (e.key === 'Escape' && (mostOpen || ecoOpen || infoOpen) && !typing) { closePages(); return; }
   if (e.target.closest && e.target.closest('#alrtPage')) return;
   if (e.target.closest && e.target.closest('#fxcPage')) return;  // typing an amount or picking a currency
   if (e.key === 'Escape' && desOpen && !typing) { closeDes(); return; }
@@ -2244,7 +2417,7 @@ document.addEventListener('keydown', e => {
 });
 
 // ---------- boot ----------
-buildClocks(); updClocks(); buildWatch(); setEvView(['heat', 'most'].includes(store.get('ev', 'earn')) ? store.get('ev') : 'earn');
+buildClocks(); updClocks(); buildWatch(); setPrView(prView); setEvView(['heat', 'most'].includes(store.get('ev', 'earn')) ? store.get('ev') : 'earn');
 select(sel);
 pollQuotes(); pollStatus(); loadNews(true); loadEarnings(); pollDelayed(); pollRefs(); pollYahoo();
 for (const s of watch) queueProfile(s);
