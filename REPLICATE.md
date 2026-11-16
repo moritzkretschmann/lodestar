@@ -81,6 +81,13 @@ Load it with `launchctl load ~/Library/LaunchAgents/com.lodestar.server.plist`. 
 - Source notes live in tooltips (status bar, chart and Time & Sales headers) to keep the screen quiet. The news panel opens on TV; the Google News tab was removed.
 - `/` focuses the command line. Esc closes dropdowns and pages. ↑/↓ moves through the watchlist.
 
+### Look (Nov 2026 redesign)
+- Neutral black/grey palette, IBM Plex Mono everywhere, compact 26 px panel headers in title case, green (`--acc`) for active tabs.
+- Quote Monitor (left) is a table: tabs All / Equities / Indices / Commodities / FX / Crypto, columns Ticker, Last, Chg, Chg %.
+- News is a one-line table (time, headline, ticker, source); hot headlines are red, details in the tooltip.
+- Bottom-right panel: Earnings / Active (US most active, gainers, losers) / Heatmap.
+- Corporate-actions panel has tabs for US-listed stocks: Corporate actions, **Holders** (13F treemap, colour = change in shares), **Short interest** (charts of shares short and days to cover), **Analysts** (price target and range, Buy/Hold/Sell, quarterly and yearly EPS estimates). Data: Nasdaq's public JSON API (`api.nasdaq.com`, browser UA, cached 6–12 h) via `/api/nq?symbol=&kind=holders|short|analyst`.
+
 ### Watchlist sidebar
 - Groups: Equities, Index futures, Commodity futures, FX, Crypto.
 - Defaults are the US mega caps plus these "futures", which are OANDA CFDs through Finnhub:

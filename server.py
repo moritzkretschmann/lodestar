@@ -2624,6 +2624,71 @@ def eco():
     return v
 
 
+# ---------- Nasdaq company data (US listings): holders, short interest, analysts ----------
+NQ_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131 Safari/537.36'
+
+
+def nq_num(v):
+    if v is None:
+        return None
+    if isinstance(v, (int, float)):
+        return v
+    t = re.sub(r'[$,%\s]', '', str(v))
+    try:
+        return float(t)
+    except ValueError:
+        return None
+
+
+def nq_get(path, ttl):
+    ok, v = cache.get('nq:' + path)
+    if ok:
+        return v
+    j = json.loads(http_get('https://api.nasdaq.com/api/' + path, headers={'User-Agent': NQ_UA, 'Accept': 'application/json'}, timeout=15))
+    v = j.get('data') or {}
+    cache.put('nq:' + path, v, ttl)
+    return v
+
+
+def nq_data(sym, kind):
+    if not re.fullmatch(r'[A-Z]{1,5}(\.[A-Z])?', sym or ''):
+        return {'error': 'Holders, short interest and analyst data cover US-listed stocks only.'}
+    t = sym.replace('.', '-')
+    if kind == 'holders':
+        d = nq_get(f'company/{t}/institutional-holdings?limit=40&type=TOTAL&sortColumn=marketValue&sortOrder=DESC', 12 * 3600)
+        summ = d.get('ownershipSummary') or {}
+        rows = (((d.get('holdingsTransactions') or {}).get('table') or {}).get('rows')) or []
+        return {'instPct': nq_num((summ.get('SharesOutstandingPCT') or {}).get('value')),
+                'holders': [{'name': r.get('ownerName'), 'date': r.get('date'), 'shares': nq_num(r.get('sharesHeld')),
+                             'chg': nq_num(r.get('sharesChange')), 'chgPct': nq_num(r.get('sharesChangePCT')),
+                             'value': (nq_num(r.get('marketValue')) or 0) * 1000} for r in rows]}
+    if kind == 'short':
+        d = nq_get(f'quote/{t}/short-interest?assetClass=stocks', 12 * 3600)
+        rows = ((d.get('shortInterestTable') or {}).get('rows')) or []
+        out = []
+        for r in rows:
+            try:
+                m, dd, y = (int(x) for x in r['settlementDate'].split('/'))
+            except (KeyError, ValueError):
+                continue
+            out.append({'date': f'{y:04d}-{m:02d}-{dd:02d}', 'interest': nq_num(r.get('interest')),
+                        'adv': nq_num(r.get('avgDailyShareVolume')), 'dtc': nq_num(r.get('daysToCover'))})
+        return {'rows': sorted(out, key=lambda r: r['date'])}
+    if kind == 'analyst':
+        tp = nq_get(f'analyst/{t}/targetprice', 6 * 3600)
+        fc = nq_get(f'analyst/{t}/earnings-forecast', 6 * 3600)
+        co = tp.get('consensusOverview') or {}
+        hist = [{'t': h.get('x'), 'px': h.get('y'), **{k: (h.get('z') or {}).get(k) for k in ('buy', 'hold', 'sell', 'consensus')}}
+                for h in tp.get('historicalConsensus') or []]
+        pick = lambda f: [{'end': r.get('fiscalEnd'), 'eps': nq_num(r.get('consensusEPSForecast')), 'hi': nq_num(r.get('highEPSForecast')),
+                           'lo': nq_num(r.get('lowEPSForecast')), 'n': r.get('noOfEstimates'), 'up': r.get('up'), 'down': r.get('down')}
+                          for r in ((fc.get(f) or {}).get('rows') or [])]
+        return {'target': nq_num(co.get('priceTarget')), 'lo': nq_num(co.get('lowPriceTarget')), 'hi': nq_num(co.get('highPriceTarget')),
+                'buy': co.get('buy'), 'hold': co.get('hold'), 'sell': co.get('sell'), 'history': hist,
+                'quarterly': pick('quarterlyForecast'), 'yearly': pick('yearlyForecast')}
+    return {'error': 'Unknown data kind'}
+
+
 # ---------- FX converter: ECB reference rates (daily, ~30 currencies) with Yahoo's live quotes on top ----------
 FX_NAMES = {'EUR': 'Euro', 'USD': 'US dollar', 'GBP': 'British pound', 'CHF': 'Swiss franc', 'JPY': 'Japanese yen', 'CNY': 'Chinese yuan',
             'HKD': 'Hong Kong dollar', 'CAD': 'Canadian dollar', 'AUD': 'Australian dollar', 'NZD': 'New Zealand dollar', 'SEK': 'Swedish krona',
@@ -3088,6 +3153,7 @@ class Handler(BaseHTTPRequestHandler):
                 '/api/wei': wei,
                 '/api/most': lambda: most(qs.get('kind', 'gainers')),
                 '/api/eco': eco,
+                '/api/nq': lambda: nq_data(qs.get('symbol', '').upper()[:12], qs.get('kind', '')),
                 '/api/des': lambda: des(one_sym(qs), qs.get('name', '')[:80], qs.get('isin', '').upper()[:12]),
                 '/api/earnings': earnings,
                 '/api/refs': lambda: futures_refs(parse_syms(qs.get('symbols', ''))),
