@@ -31,6 +31,7 @@ import urllib.parse
 import urllib.request
 import webbrowser
 import xml.etree.ElementTree as ET
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
@@ -2727,6 +2728,97 @@ def tiles():
     return {'tiles': [{'symbol': s, 'label': l, **live.get(s, {})} for s, l in TILES], 'busy': busy}
 
 
+# ---------- macro: FRED series, US Treasury curve, Yahoo boards (sectors, commodities, crypto) ----------
+def fred_series(sid):
+    ok, v = cache.get('fred:' + sid)
+    if ok:
+        return v
+    # FRED stalls unknown user agents but serves Python's default one
+    raw = http_get('https://fred.stlouisfed.org/graph/fredgraph.csv?id=' + sid, headers={'User-Agent': 'Python-urllib/3'}, timeout=30).decode('utf-8', 'replace')
+    obs = []
+    for line in raw.splitlines()[1:]:
+        d, _, x = line.partition(',')
+        try:
+            obs.append([d, float(x)])
+        except ValueError:
+            continue
+    v = obs[-420:]
+    cache.put('fred:' + sid, v, 6 * 3600)
+    return v
+
+
+def fred(ids):
+    ids = [i for i in ids[:24] if re.fullmatch(r'[A-Z0-9_]{2,40}', i)]
+    out, errs = {}, []
+
+    def one(sid):
+        try:
+            return sid, fred_series(sid), None
+        except Upstream as e:
+            return sid, None, f'{sid}: {e}'
+    with ThreadPoolExecutor(max_workers=8) as ex:
+        for sid, v, err in ex.map(one, ids):
+            if err:
+                errs.append(err)
+            else:
+                out[sid] = v
+    return {'series': out, 'errors': errs}
+
+
+CURVE_TENORS = ['1 Mo', '2 Mo', '3 Mo', '4 Mo', '6 Mo', '1 Yr', '2 Yr', '3 Yr', '5 Yr', '7 Yr', '10 Yr', '20 Yr', '30 Yr']
+
+
+def treasury_year(y):
+    ok, v = cache.get(f'ust:{y}')
+    if ok:
+        return v
+    raw = http_get(f'https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/{y}/all'
+                   f'?type=daily_treasury_yield_curve&field_tdr_date_value={y}&page&_format=csv', timeout=30).decode('utf-8', 'replace')
+    lines = raw.splitlines()
+    head = [h.strip().strip('"') for h in lines[0].split(',')]
+    rows = []
+    for line in lines[1:]:
+        cells = line.split(',')
+        try:
+            m, d, yy = (int(x) for x in cells[0].split('/'))
+        except ValueError:
+            continue
+        rec = dict(zip(head, cells))
+        rows.append([f'{yy:04d}-{m:02d}-{d:02d}', [float(rec[t]) if rec.get(t, '').strip() not in ('', 'N/A') else None for t in CURVE_TENORS]])
+    v = sorted(rows)
+    cache.put(f'ust:{y}', v, 3 * 3600 if y == datetime.now().year else 7 * 86400)
+    return v
+
+
+def curve():
+    y = datetime.now().year
+    rows = treasury_year(y - 1) + treasury_year(y)
+    return {'tenors': CURVE_TENORS, 'rows': rows[-300:]}
+
+
+BOARDS = {
+    'sectors': [('XLK', 'Technology'), ('XLC', 'Communication'), ('XLY', 'Cons. discretionary'), ('XLF', 'Financials'), ('XLV', 'Health care'),
+                ('XLI', 'Industrials'), ('XLP', 'Cons. staples'), ('XLE', 'Energy'), ('XLB', 'Materials'), ('XLU', 'Utilities'), ('XLRE', 'Real estate'),
+                ('SPY', 'S&P 500'), ('RSP', 'S&P 500 equal weight'), ('IWM', 'Russell 2000'), ('SMH', 'Semiconductors'), ('KRE', 'Regional banks')],
+    'commodities': [('GC=F', 'Gold'), ('SI=F', 'Silver'), ('PL=F', 'Platinum'), ('PA=F', 'Palladium'), ('HG=F', 'Copper'), ('CL=F', 'WTI crude'),
+                    ('BZ=F', 'Brent crude'), ('NG=F', 'Natural gas'), ('RB=F', 'Gasoline'), ('HO=F', 'Heating oil'), ('ZC=F', 'Corn'),
+                    ('ZW=F', 'Wheat'), ('ZS=F', 'Soybeans'), ('KC=F', 'Coffee'), ('CC=F', 'Cocoa'), ('SB=F', 'Sugar'), ('CT=F', 'Cotton'), ('LE=F', 'Live cattle')],
+    'crypto': [('BTC-USD', 'Bitcoin'), ('ETH-USD', 'Ether'), ('SOL-USD', 'Solana'), ('XRP-USD', 'XRP'), ('BNB-USD', 'BNB'), ('DOGE-USD', 'Dogecoin'),
+               ('ADA-USD', 'Cardano'), ('AVAX-USD', 'Avalanche'), ('LINK-USD', 'Chainlink'), ('DOT-USD', 'Polkadot'), ('LTC-USD', 'Litecoin'), ('TRX-USD', 'Tron')],
+}
+
+
+def board(name):
+    rows = BOARDS.get(name)
+    if not rows:
+        return {'error': 'Unknown board'}
+    syms = [s for s, _ in rows]
+    live, busy = yahoo_spark(syms)
+    ytd, busy2 = yahoo_spark(syms, 'ytd')
+    return {'rows': [{'symbol': s, 'name': n, **live.get(s, {}), 'yearRef': (ytd.get(s) or {}).get('prev')} for s, n in rows],
+            'notes': ['Yahoo is rate limiting; some prices are missing.'] if busy or busy2 else []}
+
+
 # ---------- FX converter: ECB reference rates (daily, ~30 currencies) with Yahoo's live quotes on top ----------
 FX_NAMES = {'EUR': 'Euro', 'USD': 'US dollar', 'GBP': 'British pound', 'CHF': 'Swiss franc', 'JPY': 'Japanese yen', 'CNY': 'Chinese yuan',
             'HKD': 'Hong Kong dollar', 'CAD': 'Canadian dollar', 'AUD': 'Australian dollar', 'NZD': 'New Zealand dollar', 'SEK': 'Swedish krona',
@@ -3190,6 +3282,9 @@ class Handler(BaseHTTPRequestHandler):
                 '/api/fx': lambda: fx_rates(),
                 '/api/wei': wei,
                 '/api/tiles': tiles,
+                '/api/fred': lambda: fred([x for x in qs.get('ids', '').upper().split(',') if x]),
+                '/api/curve': curve,
+                '/api/board': lambda: board(qs.get('set', '')),
                 '/api/most': lambda: most(qs.get('kind', 'gainers')),
                 '/api/eco': eco,
                 '/api/fa': lambda: fa_data(qs.get('symbol', '').upper()[:12], qs.get('freq', 'annual')),

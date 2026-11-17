@@ -71,7 +71,7 @@ Load it with `launchctl load ~/Library/LaunchAgents/com.lodestar.server.plist`. 
 - Search by name, ticker, ISIN or Bloomberg code (`NVD GY`, `SAP GR Equity`, `US67066G1040`).
 - Result order: **main listing first** (the US line for US ISINs, GY for German ones), then the typed listing, then real-time venues, then delayed venues, then the rest.
 - `<ticker | ISIN | name> DES`: description page. A bare `DES` opens it for the current instrument.
-- `FXCA`, `100 USD FXCA` or `100 USD CHF FXCA`: FX converter page. `FXC` also works.
+- `FX`, `100 USD FX` or `100 USD CHF FX`: FX converter page (`FXCA` still works).
 - `WEI`: world equity indices page (30 indices in Americas, EMEA and Asia-Pacific from Yahoo spark, `/api/wei`). A row click opens the index chart as a `YH:^…` symbol.
 - `MOST`: US top movers page with Gainers / Losers / Most active tabs (Yahoo predefined screeners `day_gainers`, `day_losers`, `most_actives` via `/api/most?kind=`, no crumb needed, cached 60 s), with relative volume vs the 3-month average. A row click opens the stock.
 - `ECO`: this week's economic calendar from Forex Factory's public export (`nfs.faireconomy.media/ff_calendar_thisweek.json`, `/api/eco`), in local time, filterable by impact and currency. **The feed rate-limits hard (429 after two quick requests):** the server fetches at most hourly, keeps a copy in `~/.config/lodestar/eco.json`, and backs off 10 minutes after an error. No actual values, only forecast and previous.
@@ -87,6 +87,16 @@ Load it with `launchctl load ~/Library/LaunchAgents/com.lodestar.server.plist`. 
 - News is a one-line table (time, headline, ticker, source); hot headlines are red, details in the tooltip.
 - Bottom-right panel: Earnings / Active (US most active, gainers, losers) / Heatmap.
 - Corporate-actions panel has tabs for US-listed stocks: Corporate actions, **Holders** (13F treemap, colour = change in shares), **Short interest** (charts of shares short and days to cover), **Analysts** (price target and range, Buy/Hold/Sell, quarterly and yearly EPS estimates). Data: Nasdaq's public JSON API (`api.nasdaq.com`, browser UA, cached 6–12 h) via `/api/nq?symbol=&kind=holders|short|analyst`.
+
+### Launchpad (customisable pages)
+- The home screen is a set of pages (tabs next to "Lodestar": Main, Macro, +). Each page is a tree of rows/columns with one function per leaf, stored in localStorage `lodestar.lp`.
+- Drag a panel by its title bar onto another panel: an edge docks it on that side (`lpSplit(..., before)`), the middle swaps the two (`lpReplace`). Overlays are `position:fixed` under `html{zoom}`, so their coordinates are divided by `zoomF()`.
+- Every panel header has a `⋯` menu: Replace with…, Add to the right…, Add below…, Close panel. Borders between panels are draggable. Page tabs: double-click renames, right-click offers rename / duplicate / reset / delete, Alt+1…9 switches pages, `LP` in the command line adds a function to the current page.
+- Functions (registry `WID` in index.html): every panel is standalone: Quote Monitor, Chart, News, TV, Corporate actions, Index members, Snapshot, Time & sales, Earnings, Most active, Watchlist heatmap, and the selection-driven Holders, Short interest, Analysts, Index heatmap, Index sectors (`dep: true`, re-rendered on every selection), plus widgets that render into any container: `GC` yield curve, `ECST` economic indicators, `BTMM` rates & central banks, `FXC` FX matrix, `SECT` US sectors, `GLCO` commodities, `CRYP` crypto, world indices, economic calendar. Typing a widget command opens it full page with "+ Add to page".
+- Data: FRED CSV (`fred.stlouisfed.org/graph/fredgraph.csv?id=`; **FRED stalls custom User-Agents, so the server sends `Python-urllib/3`**, series fetched in parallel, cached 6 h), US Treasury daily par curve CSV (per year), Yahoo spark boards (`/api/board?set=sectors|commodities|crypto`).
+
+### Selection-driven panels
+- Corporate actions (shares only), Index members (own panel `p-members`: follows the selected index and keeps the last one while a stock is selected, `lodestar.lastIdx`), Holders, Short interest, Analysts, Index heatmap, Index sectors. The former context tabs are all standalone functions; the default pages are Main (Quote Monitor + heatmap | commodities, Most Active, Time & sales | chart, index sectors + snapshot, index members | TV with Hot headlines, economic calendar, earnings), Indices (members, heatmap, index sectors, US sectors) and Macro. Saved layouts migrate once (`v4`): Main is replaced by this layout and an identical extra page is dropped. Index panels fall back to Nasdaq 100 until an index is selected.
 
 ### Gödel-style additions
 - Default UI scale: `html{zoom:.84}`. The chart divides mouse coordinates by the zoom (`zoomF()`) and sizes its canvas from `clientWidth`; keep the browser itself at 100 %.
